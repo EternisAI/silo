@@ -1,14 +1,14 @@
 package config
 
 import (
+	"os"
 	"path/filepath"
 )
 
 const (
-	DefaultInstallDir = "/opt/silo"
-	ConfigFileName    = "config.yml"
-	ComposeFileName   = "docker-compose.yml"
-	StateFileName     = "state.json"
+	ConfigFileName  = "config.yml"
+	ComposeFileName = "docker-compose.yml"
+	StateFileName   = "state.json"
 )
 
 type Paths struct {
@@ -19,9 +19,17 @@ type Paths struct {
 	StateFile   string
 }
 
+func DefaultInstallDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return filepath.Join(os.TempDir(), "silo")
+	}
+	return filepath.Join(home, ".config", "silo")
+}
+
 func NewPaths(installDir string) *Paths {
 	if installDir == "" {
-		installDir = DefaultInstallDir
+		installDir = DefaultInstallDir()
 	}
 
 	return &Paths{

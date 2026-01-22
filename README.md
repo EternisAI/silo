@@ -1,21 +1,21 @@
 # Silo CLI
 
-A command-line tool to install, manage, and update the Silo application deployed via Docker Compose.
+A command-line tool to deploy, manage, and upgrade the Silo application using Docker Compose.
 
 ## Features
 
-- **One-Command Installation**: Deploy Silo with PostgreSQL and pgvector in seconds
-- **Easy Management**: Start, stop, update, and monitor your deployment
+- **One-Command Deployment**: Deploy Silo with PostgreSQL and pgvector in seconds
+- **Simple Management**: Start, stop, upgrade, and monitor your deployment
 - **Docker-Based**: Leverages Docker Compose for reliable containerization
-- **Configuration Management**: Simple YAML-based configuration
-- **Automated Updates**: Pull and deploy new versions seamlessly
+- **YAML Configuration**: Simple YAML-based configuration stored in ~/.config/silo
+- **Automated Upgrades**: Pull and deploy new versions seamlessly
 
 ## Prerequisites
 
 - Docker (version 20.10+)
 - Docker Compose (v1 or v2)
 - Linux or macOS
-- User must be in the `docker` group (or use `sudo`)
+- User must be in the `docker` group
 
 ## Installation
 
@@ -49,67 +49,54 @@ sudo make install
 
 ## Usage
 
-### Install Silo
+### Start Silo
 
-Deploy Silo application with default settings:
-
-```bash
-sudo silo install
-```
-
-Custom configuration:
+Deploy and start Silo application (auto-installs on first run):
 
 ```bash
-sudo silo install --port 8080 --image-tag v1.2.3
+silo up
 ```
 
-Options:
+Custom configuration on first install:
+
+```bash
+silo up --port 8080 --image-tag v1.2.3
+```
+
+Options (first install only):
 - `--port` - Application port (default: 3000)
 - `--image-registry` - Docker image registry (default: ghcr.io/eternisai)
 - `--image-tag` - Docker image tag (default: latest)
-- `--config-dir` - Installation directory (default: /opt/silo)
+- `--config-dir` - Configuration directory (default: ~/.config/silo)
 
 ### Check Status
 
 View deployment status and container health:
 
 ```bash
-sudo silo status
+silo status
 ```
 
 ### View Logs
 
-View logs from all containers:
+View logs using Docker Compose directly:
 
 ```bash
-sudo silo logs
+docker compose -f ~/.config/silo/docker-compose.yml logs -f
 ```
 
-View logs from specific service:
+Or for specific service:
 
 ```bash
-sudo silo logs silo
-sudo silo logs pgvector
+docker compose -f ~/.config/silo/docker-compose.yml logs -f silo
 ```
 
-Follow logs in real-time:
+### Upgrade Silo
+
+Upgrade to the latest version:
 
 ```bash
-sudo silo logs -f
-```
-
-Show last 50 lines:
-
-```bash
-sudo silo logs -n 50
-```
-
-### Update Silo
-
-Update to the latest version:
-
-```bash
-sudo silo update
+silo upgrade
 ```
 
 This will:
@@ -120,42 +107,30 @@ This will:
 
 ### Configuration Management
 
-Show current configuration:
+Edit configuration file with your preferred editor:
 
 ```bash
-sudo silo config show
-```
-
-Edit configuration file:
-
-```bash
-sudo silo config edit
-```
-
-Set a configuration value:
-
-```bash
-sudo silo config set port 8080
+vi ~/.config/silo/config.yml
 ```
 
 After changing configuration, restart containers:
 
 ```bash
-sudo silo update
+silo down && silo up
 ```
 
-### Uninstall
+### Stop Silo
 
 Stop containers (preserve data):
 
 ```bash
-sudo silo uninstall
+silo down
 ```
 
 Remove everything including data:
 
 ```bash
-sudo silo uninstall --purge-data
+silo down && rm -rf ~/.config/silo && docker volume prune
 ```
 
 ### Version Information
@@ -181,8 +156,8 @@ Silo deploys two containers:
 ## Directory Structure
 
 ```
-/opt/silo/                    # Default installation directory
-├── config.yml                # Application configuration
+~/.config/silo/               # Default configuration directory
+├── config.yml                # Application configuration (YAML)
 ├── docker-compose.yml        # Docker Compose configuration
 ├── state.json                # Installation state
 └── data/                     # Application data directory
@@ -236,7 +211,7 @@ Error: port 3000 is already in use
 
 **Solution**: Install on a different port:
 ```bash
-sudo silo install --port 8080
+silo up --port 8080
 ```
 
 ### Insufficient disk space
@@ -245,9 +220,9 @@ sudo silo install --port 8080
 Error: insufficient disk space: 2 GB available, 5 GB required
 ```
 
-**Solution**: Free up disk space or use a different installation directory with more space:
+**Solution**: Free up disk space or use a different configuration directory with more space:
 ```bash
-sudo silo install --config-dir /path/to/larger/disk
+silo up --config-dir /path/to/larger/disk
 ```
 
 ## Development
@@ -273,7 +248,7 @@ make fmt
 ### Run locally
 
 ```bash
-make dev ARGS="install"
+make dev ARGS="up"
 ```
 
 ## Global Flags
@@ -281,7 +256,7 @@ make dev ARGS="install"
 All commands support these global flags:
 
 - `--verbose, -v` - Enable debug logging
-- `--config-dir` - Override installation directory (default: /opt/silo)
+- `--config-dir` - Override configuration directory (default: ~/.config/silo)
 
 ## License
 

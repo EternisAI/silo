@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 
+	"github.com/eternisai/silo/internal/config"
 	"github.com/eternisai/silo/pkg/logger"
 	"github.com/spf13/cobra"
 )
@@ -34,5 +35,5 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable debug logging")
-	rootCmd.PersistentFlags().StringVar(&configDir, "config-dir", "/opt/silo", "installation directory")
+	rootCmd.PersistentFlags().StringVar(&configDir, "config-dir", config.DefaultInstallDir(), "configuration directory")
 }
