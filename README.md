@@ -34,8 +34,13 @@ curl -fsSL https://raw.githubusercontent.com/eternisai/silo/main/scripts/install
    ```
 3. Move the binary to your PATH:
    ```bash
-   sudo mv silo /usr/local/bin/
-   sudo chmod +x /usr/local/bin/silo
+   mkdir -p ~/.local/bin
+   mv silo ~/.local/bin/
+   chmod +x ~/.local/bin/silo
+   ```
+4. Ensure `~/.local/bin` is in your PATH (add to ~/.bashrc or ~/.zshrc):
+   ```bash
+   export PATH="$HOME/.local/bin:$PATH"
    ```
 
 ### Build from Source
@@ -82,13 +87,13 @@ silo status
 View logs using Docker Compose directly:
 
 ```bash
-docker compose -f ~/.config/silo/docker-compose.yml logs -f
+docker compose -f ~/.local/share/silo/docker-compose.yml logs -f
 ```
 
 Or for specific service:
 
 ```bash
-docker compose -f ~/.config/silo/docker-compose.yml logs -f silo
+docker compose -f ~/.local/share/silo/docker-compose.yml logs -f silo
 ```
 
 ### Upgrade Silo
@@ -130,7 +135,7 @@ silo down
 Remove everything including data:
 
 ```bash
-silo down && rm -rf ~/.config/silo && docker volume prune
+silo down && rm -rf ~/.config/silo ~/.local/share/silo && docker volume prune
 ```
 
 ### Version Information
@@ -155,12 +160,19 @@ Silo deploys two containers:
 
 ## Directory Structure
 
+Following the XDG Base Directory specification:
+
 ```
-~/.config/silo/               # Default configuration directory
-├── config.yml                # Application configuration (YAML)
+~/.local/bin/
+└── silo                      # CLI binary
+
+~/.config/silo/               # Configuration directory
+└── config.yml                # Application configuration (YAML)
+
+~/.local/share/silo/          # Data directory
 ├── docker-compose.yml        # Docker Compose configuration
 ├── state.json                # Installation state
-└── data/                     # Application data directory
+└── data/                     # Application data
 ```
 
 ## Configuration File

@@ -12,31 +12,43 @@ const (
 )
 
 type Paths struct {
-	InstallDir  string
+	ConfigDir   string
+	DataDir     string
 	ConfigFile  string
 	ComposeFile string
-	DataDir     string
 	StateFile   string
+	AppDataDir  string
 }
 
-func DefaultInstallDir() string {
+func DefaultConfigDir() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return filepath.Join(os.TempDir(), "silo")
+		return filepath.Join(os.TempDir(), "silo", "config")
 	}
 	return filepath.Join(home, ".config", "silo")
 }
 
-func NewPaths(installDir string) *Paths {
-	if installDir == "" {
-		installDir = DefaultInstallDir()
+func DefaultDataDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return filepath.Join(os.TempDir(), "silo", "data")
+	}
+	return filepath.Join(home, ".local", "share", "silo")
+}
+
+func NewPaths(configDir string) *Paths {
+	if configDir == "" {
+		configDir = DefaultConfigDir()
 	}
 
+	dataDir := DefaultDataDir()
+
 	return &Paths{
-		InstallDir:  installDir,
-		ConfigFile:  filepath.Join(installDir, ConfigFileName),
-		ComposeFile: filepath.Join(installDir, ComposeFileName),
-		DataDir:     filepath.Join(installDir, "data"),
-		StateFile:   filepath.Join(installDir, StateFileName),
+		ConfigDir:   configDir,
+		DataDir:     dataDir,
+		ConfigFile:  filepath.Join(configDir, ConfigFileName),
+		ComposeFile: filepath.Join(dataDir, ComposeFileName),
+		StateFile:   filepath.Join(dataDir, StateFileName),
+		AppDataDir:  filepath.Join(dataDir, "data"),
 	}
 }

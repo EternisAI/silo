@@ -67,7 +67,7 @@ func (i *Installer) runPreflightChecks() error {
 		return err
 	}
 
-	parentDir := filepath.Dir(i.paths.InstallDir)
+	parentDir := filepath.Dir(i.paths.DataDir)
 	i.logger.Debug("Checking disk space for %s...", parentDir)
 	if err := CheckDiskSpace(parentDir, RequiredDiskSpaceGB); err != nil {
 		return err
@@ -86,8 +86,9 @@ func (i *Installer) createDirectories() error {
 	i.logger.Info("Creating directories...")
 
 	dirs := []string{
-		i.paths.InstallDir,
+		i.paths.ConfigDir,
 		i.paths.DataDir,
+		i.paths.AppDataDir,
 	}
 
 	for _, dir := range dirs {

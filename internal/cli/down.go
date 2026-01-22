@@ -15,7 +15,7 @@ var downCmd = &cobra.Command{
 	Long: `Stop Silo containers while preserving all data.
 
 To completely remove Silo including data:
-  silo down && rm -rf ~/.config/silo && docker volume prune`,
+  silo down && rm -rf ~/.config/silo ~/.local/share/silo && docker volume prune`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		paths := config.NewPaths(configDir)
@@ -33,7 +33,8 @@ To completely remove Silo including data:
 		}
 
 		log.Success("Silo stopped successfully")
-		log.Info("Configuration and data preserved at %s", paths.InstallDir)
+		log.Info("Configuration preserved at %s", paths.ConfigDir)
+		log.Info("Data preserved at %s", paths.DataDir)
 
 		return nil
 	},

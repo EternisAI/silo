@@ -2,7 +2,7 @@
 set -e
 
 REPO="eternisai/silo"
-INSTALL_DIR="/usr/local/bin"
+INSTALL_DIR="$HOME/.local/bin"
 BINARY_NAME="silo"
 
 get_latest_release() {
@@ -54,15 +54,21 @@ main() {
     exit 1
   fi
 
-  if [ -w "$INSTALL_DIR" ]; then
-    mv "$TMP_DIR/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
-  else
-    echo "Installing to $INSTALL_DIR (requires sudo)..."
-    sudo mv "$TMP_DIR/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
-    sudo chmod +x "$INSTALL_DIR/$BINARY_NAME"
-  fi
+  echo "Installing to $INSTALL_DIR..."
+  mkdir -p "$INSTALL_DIR"
+  mv "$TMP_DIR/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
+  chmod +x "$INSTALL_DIR/$BINARY_NAME"
 
   echo "✓ Silo CLI installed successfully!"
+  echo ""
+
+  if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+    echo "⚠ Note: $INSTALL_DIR is not in your PATH"
+    echo "Add the following to your ~/.bashrc or ~/.zshrc:"
+    echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+  fi
+
+  echo ""
   echo "Run 'silo --help' to get started"
 }
 

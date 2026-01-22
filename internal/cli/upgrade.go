@@ -30,7 +30,7 @@ This command will:
 		}
 
 		cfg.ConfigFile = paths.ConfigFile
-		cfg.DataDir = paths.DataDir
+		cfg.DataDir = paths.AppDataDir
 
 		upd := updater.New(cfg, paths, log)
 		if err := upd.Update(ctx); err != nil {

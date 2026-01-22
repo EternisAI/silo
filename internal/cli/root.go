@@ -35,5 +35,5 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable debug logging")
-	rootCmd.PersistentFlags().StringVar(&configDir, "config-dir", config.DefaultInstallDir(), "configuration directory")
+	rootCmd.PersistentFlags().StringVar(&configDir, "config-dir", config.DefaultConfigDir(), "configuration directory")
 }

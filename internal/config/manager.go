@@ -39,7 +39,7 @@ func NewDefaultConfig(paths *Paths) *Config {
 		ImageTag:      DefaultImageTag,
 		Port:          DefaultPort,
 		ConfigFile:    paths.ConfigFile,
-		DataDir:       paths.DataDir,
+		DataDir:       paths.AppDataDir,
 	}
 }
 
