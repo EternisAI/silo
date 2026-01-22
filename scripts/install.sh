@@ -14,7 +14,6 @@ get_latest_release() {
 detect_arch() {
   case "$(uname -m)" in
     x86_64) echo "amd64" ;;
-    aarch64|arm64) echo "arm64" ;;
     *)
       echo "Error: Unsupported architecture $(uname -m)"
       exit 1
