@@ -8,10 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var updateCmd = &cobra.Command{
-	Use:   "update",
-	Short: "Update Silo to the latest version",
-	Long: `Update Silo to the latest version by pulling new images and recreating containers.
+var upgradeCmd = &cobra.Command{
+	Use:   "upgrade",
+	Short: "Upgrade Silo to the latest version",
+	Long: `Upgrade Silo to the latest version by pulling new images and recreating containers.
 
 This command will:
   - Backup current configuration
@@ -25,6 +25,7 @@ This command will:
 		cfg, err := config.Load(paths.ConfigFile)
 		if err != nil {
 			log.Error("Failed to load config: %v", err)
+			log.Info("Run 'silo up' first")
 			return err
 		}
 
@@ -33,7 +34,7 @@ This command will:
 
 		upd := updater.New(cfg, paths, log)
 		if err := upd.Update(ctx); err != nil {
-			log.Error("Update failed: %v", err)
+			log.Error("Upgrade failed: %v", err)
 			return err
 		}
 
@@ -42,5 +43,5 @@ This command will:
 }
 
 func init() {
-	rootCmd.AddCommand(updateCmd)
+	rootCmd.AddCommand(upgradeCmd)
 }

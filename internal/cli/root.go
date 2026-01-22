@@ -8,15 +8,18 @@ import (
 )
 
 var (
-	verbose   bool
-	configDir string
-	log       *logger.Logger
+	verbose       bool
+	configDir     string
+	imageRegistry string
+	imageTag      string
+	port          int
+	log           *logger.Logger
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "silo",
 	Short: "Silo - Application deployment and management CLI",
-	Long: `Silo is a CLI tool to install, manage, and update the Silo application
+	Long: `Silo is a CLI tool to deploy, manage, and upgrade the Silo application
 deployed via Docker Compose with PostgreSQL and pgvector.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		log = logger.New(verbose)

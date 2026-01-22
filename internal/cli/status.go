@@ -20,7 +20,7 @@ var statusCmd = &cobra.Command{
 
 		if _, err := os.Stat(paths.ComposeFile); os.IsNotExist(err) {
 			log.Warn("Silo is not installed")
-			log.Info("Run 'silo install' to install")
+			log.Info("Run 'silo up' to install")
 			return nil
 		}
 
@@ -44,7 +44,7 @@ var statusCmd = &cobra.Command{
 
 		if len(containers) == 0 {
 			log.Warn("No containers running")
-			log.Info("Run 'silo install' to start")
+			log.Info("Run 'silo up' to start")
 			return nil
 		}
 
