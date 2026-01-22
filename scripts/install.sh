@@ -21,11 +21,25 @@ detect_arch() {
   esac
 }
 
+check_dependencies() {
+  if ! command -v docker &> /dev/null; then
+    echo "Error: docker is not installed"
+    exit 1
+  fi
+
+  if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+    echo "Error: docker-compose is not installed"
+    exit 1
+  fi
+}
+
 main() {
   if [ "$(uname -s)" != "Linux" ]; then
     echo "Error: This script only supports Linux (Debian/Ubuntu)"
     exit 1
   fi
+
+  check_dependencies
 
   echo "Installing Silo CLI..."
 
