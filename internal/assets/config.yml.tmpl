@@ -3,7 +3,6 @@ image_registry: "{{.ImageRegistry}}"
 image_tag: "{{.ImageTag}}"
 port: {{.Port}}
 
-# Application configuration
-app:
-  log_level: "info"
-  data_dir: "/data"
+# LLM Configuration
+llm_base_url: "{{.LLMBaseURL}}"
+default_model: "{{.DefaultModel}}"

@@ -13,6 +13,8 @@ const (
 	DefaultImageRegistry = "ghcr.io/eternisai"
 	DefaultImageTag      = "latest"
 	DefaultPort          = 3000
+	DefaultLLMBaseURL    = "http://192.168.6.191:30000/v1"
+	DefaultModel         = "GLM-4.7-Q4_K_M.gguf"
 )
 
 type Config struct {
@@ -20,6 +22,8 @@ type Config struct {
 	ImageRegistry string `yaml:"image_registry"`
 	ImageTag      string `yaml:"image_tag"`
 	Port          int    `yaml:"port"`
+	LLMBaseURL    string `yaml:"llm_base_url"`
+	DefaultModel  string `yaml:"default_model"`
 	ConfigFile    string `yaml:"-"`
 	DataDir       string `yaml:"-"`
 }
@@ -38,6 +42,8 @@ func NewDefaultConfig(paths *Paths) *Config {
 		ImageRegistry: DefaultImageRegistry,
 		ImageTag:      DefaultImageTag,
 		Port:          DefaultPort,
+		LLMBaseURL:    DefaultLLMBaseURL,
+		DefaultModel:  DefaultModel,
 		ConfigFile:    paths.ConfigFile,
 		DataDir:       paths.AppDataDir,
 	}
@@ -79,6 +85,12 @@ func Validate(config *Config) error {
 	}
 	if config.Port < 1 || config.Port > 65535 {
 		return fmt.Errorf("port must be between 1 and 65535")
+	}
+	if config.LLMBaseURL == "" {
+		return fmt.Errorf("llm_base_url cannot be empty")
+	}
+	if config.DefaultModel == "" {
+		return fmt.Errorf("default_model cannot be empty")
 	}
 	return nil
 }
