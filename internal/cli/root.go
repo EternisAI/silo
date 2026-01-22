@@ -21,7 +21,7 @@ var rootCmd = &cobra.Command{
 	Use:   "silo",
 	Short: "Silo - Application deployment and management CLI",
 	Long: `Silo is a CLI tool to deploy, manage, and upgrade the Silo application
-deployed via Docker Compose with PostgreSQL and pgvector.`,
+with PostgreSQL and pgvector.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		log = logger.New(verbose)
 	},

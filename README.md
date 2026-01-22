@@ -1,11 +1,10 @@
 # Silo CLI
 
-CLI tool to deploy and manage Silo application using Docker Compose.
+CLI tool to deploy and manage Silo application.
 
 ## Requirements
 
 - Docker 20.10+
-- Docker Compose
 - Debian/Ubuntu Linux
 - User in `docker` group
 
@@ -69,7 +68,9 @@ silo down && silo up
 ### Logs
 
 ```bash
-docker compose -f ~/.local/share/silo/docker-compose.yml logs -f
+silo logs -f             # follow logs
+silo logs --tail 50      # show last 50 lines
+silo logs backend        # logs for specific service
 ```
 
 ### Uninstall
@@ -83,7 +84,7 @@ silo down && rm -rf ~/.config/silo ~/.local/share/silo && docker volume prune
 ```
 ~/.local/bin/silo                    # CLI binary
 ~/.config/silo/config.yml            # Configuration
-~/.local/share/silo/                 # Docker compose, state, data
+~/.local/share/silo/                 # Application state and data
 ```
 
 ## Development
