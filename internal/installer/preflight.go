@@ -3,7 +3,6 @@ package installer
 import (
 	"fmt"
 	"net"
-	"os"
 	"syscall"
 
 	"github.com/eternisai/silo/internal/docker"
@@ -39,16 +38,5 @@ func CheckPortAvailability(port int) error {
 		return fmt.Errorf("port %d is already in use", port)
 	}
 	listener.Close()
-	return nil
-}
-
-func CheckWritePermissions(path string) error {
-	testFile := path + "/.write-test"
-	f, err := os.Create(testFile)
-	if err != nil {
-		return fmt.Errorf("no write permission for %s: %w", path, err)
-	}
-	f.Close()
-	os.Remove(testFile)
 	return nil
 }

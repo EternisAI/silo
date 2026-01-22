@@ -3,7 +3,6 @@ package docker
 import (
 	"fmt"
 	"os/exec"
-	"strings"
 )
 
 func CheckDockerInstalled() error {
@@ -41,20 +40,6 @@ func GetComposeCommand() []string {
 		return []string{"docker", "compose"}
 	}
 	return []string{"docker-compose"}
-}
-
-func CheckDockerGroupMembership() error {
-	cmd := exec.Command("groups")
-	output, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("failed to check group membership: %w", err)
-	}
-
-	groups := string(output)
-	if !strings.Contains(groups, "docker") {
-		return fmt.Errorf("current user is not in the docker group. Run: sudo usermod -aG docker $USER && newgrp docker")
-	}
-	return nil
 }
 
 func ValidateRequirements() error {
