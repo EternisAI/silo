@@ -11,7 +11,7 @@ import (
 const (
 	DefaultVersion       = "0.1.0"
 	DefaultImageRegistry = "ghcr.io/eternisai"
-	DefaultImageTag      = "latest"
+	DefaultImageTag      = "main"
 	DefaultPort          = 3000
 	DefaultLLMBaseURL    = "http://192.168.6.191:30000/v1"
 	DefaultModel         = "GLM-4.7-Q4_K_M.gguf"

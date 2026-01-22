@@ -52,6 +52,12 @@ This command will:
 		}
 
 		log.Info("Starting Silo containers...")
+
+		if err := os.MkdirAll(paths.DataDir, 0755); err != nil {
+			log.Error("Failed to create data directory: %v", err)
+			return err
+		}
+
 		if err := docker.Up(ctx, paths.ComposeFile); err != nil {
 			log.Error("Failed to start containers: %v", err)
 			return err
