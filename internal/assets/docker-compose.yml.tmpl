@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  silo:
+    image: {{.ImageRegistry}}/silo:{{.ImageTag}}
+    container_name: silo-app
+    ports:
+      - "{{.Port}}:3000"
+    depends_on:
+      pgvector:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://silo:silo@pgvector:5432/silo
+      - CONFIG_FILE=/config/config.yml
+    volumes:
+      - {{.DataDir}}:/data
+      - {{.ConfigFile}}:/config/config.yml:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  pgvector:
+    image: pgvector/pgvector:pg16
+    container_name: silo-pgvector
+    environment:
+      - POSTGRES_USER=silo
+      - POSTGRES_PASSWORD=silo
+      - POSTGRES_DB=silo
+    volumes:
+      - pgvector-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U silo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgvector-data:
