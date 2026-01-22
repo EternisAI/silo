@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-REPO="eternisai/silo"
+REPO="EternisAI/silo"
 INSTALL_DIR="$HOME/.local/bin"
 BINARY_NAME="silo"
 

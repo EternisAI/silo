@@ -13,7 +13,7 @@ const (
 	DefaultImageRegistry = "ghcr.io/eternisai"
 	DefaultImageTag      = "main"
 	DefaultPort          = 3000
-	DefaultLLMBaseURL    = "http://192.168.6.191:30000/v1"
+	DefaultLLMBaseURL    = "http://host.docker.internal:30000/v1"
 	DefaultModel         = "GLM-4.7-Q4_K_M.gguf"
 )
 

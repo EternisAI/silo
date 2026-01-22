@@ -13,13 +13,13 @@ CLI tool to deploy and manage Silo application.
 ### Quick Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/eternisai/silo/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/EternisAI/silo/main/scripts/install.sh | bash
 ```
 
 ### Build from Source
 
 ```bash
-git clone https://github.com/eternisai/silo.git
+git clone https://github.com/EternisAI/silo.git
 cd silo
 make build
 cp bin/silo ~/.local/bin/

@@ -51,7 +51,7 @@ changelog:
 
 release:
   github:
-    owner: eternisai
+    owner: EternisAI
     name: silo
   draft: false
   prerelease: auto
