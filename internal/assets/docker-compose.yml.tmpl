@@ -33,6 +33,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      inference-engine:
+        condition: service_started
     restart: unless-stopped
 
   frontend:
