@@ -14,6 +14,21 @@ const (
 	DefaultPort       = 3000
 	DefaultLLMBaseURL = "http://host.docker.internal:30000/v1"
 	DefaultModel      = "GLM-4.7-Q4_K_M.gguf"
+
+	// Inference engine defaults
+	DefaultInferencePort         = 30000
+	DefaultInferenceModelsDir    = "/data/models"
+	DefaultInferenceModelFile    = "GLM-4.7-Q4_K_M.gguf"
+	DefaultInferenceShmSize      = "16g"
+	DefaultInferenceContextSize  = 32768
+	DefaultInferenceBatchSize    = 2048
+	DefaultInferenceGPULayers    = 999
+	DefaultInferenceTensorSplit  = "1,1,1"
+	DefaultInferenceMainGPU      = 0
+	DefaultInferenceThreads      = 16
+	DefaultInferenceHTTPThreads  = 8
+	DefaultInferenceFit          = "off"
+	DefaultInferenceGPUDevices   = "'0', '1', '2'"
 )
 
 type Config struct {
@@ -24,6 +39,21 @@ type Config struct {
 	DefaultModel string `yaml:"default_model"`
 	ConfigFile   string `yaml:"-"`
 	DataDir      string `yaml:"-"`
+
+	// Inference engine configuration
+	InferencePort        int    `yaml:"inference_port"`
+	InferenceModelsDir   string `yaml:"inference_models_dir"`
+	InferenceModelFile   string `yaml:"inference_model_file"`
+	InferenceShmSize     string `yaml:"inference_shm_size"`
+	InferenceContextSize int    `yaml:"inference_context_size"`
+	InferenceBatchSize   int    `yaml:"inference_batch_size"`
+	InferenceGPULayers   int    `yaml:"inference_gpu_layers"`
+	InferenceTensorSplit string `yaml:"inference_tensor_split"`
+	InferenceMainGPU     int    `yaml:"inference_main_gpu"`
+	InferenceThreads     int    `yaml:"inference_threads"`
+	InferenceHTTPThreads int    `yaml:"inference_http_threads"`
+	InferenceFit         string `yaml:"inference_fit"`
+	InferenceGPUDevices  string `yaml:"inference_gpu_devices"`
 }
 
 type State struct {
@@ -42,6 +72,21 @@ func NewDefaultConfig(paths *Paths) *Config {
 		DefaultModel: DefaultModel,
 		ConfigFile:   paths.ConfigFile,
 		DataDir:      paths.AppDataDir,
+
+		// Inference engine defaults
+		InferencePort:        DefaultInferencePort,
+		InferenceModelsDir:   DefaultInferenceModelsDir,
+		InferenceModelFile:   DefaultInferenceModelFile,
+		InferenceShmSize:     DefaultInferenceShmSize,
+		InferenceContextSize: DefaultInferenceContextSize,
+		InferenceBatchSize:   DefaultInferenceBatchSize,
+		InferenceGPULayers:   DefaultInferenceGPULayers,
+		InferenceTensorSplit: DefaultInferenceTensorSplit,
+		InferenceMainGPU:     DefaultInferenceMainGPU,
+		InferenceThreads:     DefaultInferenceThreads,
+		InferenceHTTPThreads: DefaultInferenceHTTPThreads,
+		InferenceFit:         DefaultInferenceFit,
+		InferenceGPUDevices:  DefaultInferenceGPUDevices,
 	}
 }
 

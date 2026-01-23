@@ -50,40 +50,40 @@ services:
   inference-engine:
     image: ghcr.io/ggml-org/llama.cpp:full-cuda
     ports:
-      - "30000:30000"
+      - "{{.InferencePort}}:{{.InferencePort}}"
     volumes:
-      - /data/models:/models:ro
-    shm_size: '16g'
+      - {{.InferenceModelsDir}}:/models:ro
+    shm_size: '{{.InferenceShmSize}}'
     ipc: host
     command:
       - --server
       - -m
-      - /models/GLM-4.7-Q4_K_M.gguf
+      - /models/{{.InferenceModelFile}}
       - -c
-      - "32768"
+      - "{{.InferenceContextSize}}"
       - -b
-      - "2048"
+      - "{{.InferenceBatchSize}}"
       - -ngl
-      - "999"
+      - "{{.InferenceGPULayers}}"
       - --tensor-split
-      - 1,1,1
+      - {{.InferenceTensorSplit}}
       - -mg
-      - "0"
+      - "{{.InferenceMainGPU}}"
       - -t
-      - "16"
+      - "{{.InferenceThreads}}"
       - --threads-http
-      - "8"
+      - "{{.InferenceHTTPThreads}}"
       - -fit
-      - "off"
+      - "{{.InferenceFit}}"
       - --host
       - 0.0.0.0
       - --port
-      - "30000"
+      - "{{.InferencePort}}"
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['0', '1', '2']
+              device_ids: [{{.InferenceGPUDevices}}]
               capabilities: [gpu]
     restart: unless-stopped

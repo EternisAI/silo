@@ -5,3 +5,18 @@ port: {{.Port}}
 # LLM Configuration
 llm_base_url: "{{.LLMBaseURL}}"
 default_model: "{{.DefaultModel}}"
+
+# Inference Engine Configuration
+inference_port: {{.InferencePort}}
+inference_models_dir: "{{.InferenceModelsDir}}"
+inference_model_file: "{{.InferenceModelFile}}"
+inference_shm_size: "{{.InferenceShmSize}}"
+inference_context_size: {{.InferenceContextSize}}
+inference_batch_size: {{.InferenceBatchSize}}
+inference_gpu_layers: {{.InferenceGPULayers}}
+inference_tensor_split: "{{.InferenceTensorSplit}}"
+inference_main_gpu: {{.InferenceMainGPU}}
+inference_threads: {{.InferenceThreads}}
+inference_http_threads: {{.InferenceHTTPThreads}}
+inference_fit: "{{.InferenceFit}}"
+inference_gpu_devices: "{{.InferenceGPUDevices}}"
