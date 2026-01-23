@@ -30,7 +30,7 @@ var statusCmd = &cobra.Command{
 		} else {
 			log.Info("Installation Details:")
 			log.Info("  Version: %s", state.Version)
-			log.Info("  Image: %s/silo:%s", state.ImageRegistry, state.ImageTag)
+			log.Info("  Image Tag: %s", state.ImageTag)
 			log.Info("  Installed: %s", state.InstalledAt)
 			log.Info("  Last Updated: %s", state.LastUpdated)
 			fmt.Println()

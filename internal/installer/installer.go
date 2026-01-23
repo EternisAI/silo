@@ -145,11 +145,10 @@ func (i *Installer) saveState() error {
 	i.logger.Debug("Saving installation state...")
 
 	state := &config.State{
-		Version:       i.config.Version,
-		InstalledAt:   time.Now().Format(time.RFC3339),
-		LastUpdated:   time.Now().Format(time.RFC3339),
-		ImageRegistry: i.config.ImageRegistry,
-		ImageTag:      i.config.ImageTag,
+		Version:     i.config.Version,
+		InstalledAt: time.Now().Format(time.RFC3339),
+		LastUpdated: time.Now().Format(time.RFC3339),
+		ImageTag:    i.config.ImageTag,
 	}
 
 	if err := config.SaveState(i.paths.StateFile, state); err != nil {

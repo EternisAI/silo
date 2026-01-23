@@ -17,7 +17,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: {{.ImageRegistry}}/silo_box-backend:{{.ImageTag}}
+    image: eternis/silo-box-backend:{{.ImageTag}}
     ports:
       - "8080:8080"
     volumes:
@@ -36,7 +36,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: {{.ImageRegistry}}/silo_box-frontend:{{.ImageTag}}
+    image: eternis/silo-box-frontend:{{.ImageTag}}
     ports:
       - "{{.Port}}:3000"
     environment:

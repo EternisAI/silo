@@ -9,43 +9,39 @@ import (
 )
 
 const (
-	DefaultVersion       = "0.1.0"
-	DefaultImageRegistry = "ghcr.io/eternisai"
-	DefaultImageTag      = "main"
-	DefaultPort          = 3000
-	DefaultLLMBaseURL    = "http://host.docker.internal:30000/v1"
-	DefaultModel         = "GLM-4.7-Q4_K_M.gguf"
+	DefaultVersion    = "0.1.0"
+	DefaultImageTag   = "0.1.1"
+	DefaultPort       = 3000
+	DefaultLLMBaseURL = "http://host.docker.internal:30000/v1"
+	DefaultModel      = "GLM-4.7-Q4_K_M.gguf"
 )
 
 type Config struct {
-	Version       string `yaml:"version"`
-	ImageRegistry string `yaml:"image_registry"`
-	ImageTag      string `yaml:"image_tag"`
-	Port          int    `yaml:"port"`
-	LLMBaseURL    string `yaml:"llm_base_url"`
-	DefaultModel  string `yaml:"default_model"`
-	ConfigFile    string `yaml:"-"`
-	DataDir       string `yaml:"-"`
+	Version      string `yaml:"version"`
+	ImageTag     string `yaml:"image_tag"`
+	Port         int    `yaml:"port"`
+	LLMBaseURL   string `yaml:"llm_base_url"`
+	DefaultModel string `yaml:"default_model"`
+	ConfigFile   string `yaml:"-"`
+	DataDir      string `yaml:"-"`
 }
 
 type State struct {
-	Version       string `json:"version"`
-	InstalledAt   string `json:"installed_at"`
-	LastUpdated   string `json:"last_updated"`
-	ImageRegistry string `json:"image_registry"`
-	ImageTag      string `json:"image_tag"`
+	Version     string `json:"version"`
+	InstalledAt string `json:"installed_at"`
+	LastUpdated string `json:"last_updated"`
+	ImageTag    string `json:"image_tag"`
 }
 
 func NewDefaultConfig(paths *Paths) *Config {
 	return &Config{
-		Version:       DefaultVersion,
-		ImageRegistry: DefaultImageRegistry,
-		ImageTag:      DefaultImageTag,
-		Port:          DefaultPort,
-		LLMBaseURL:    DefaultLLMBaseURL,
-		DefaultModel:  DefaultModel,
-		ConfigFile:    paths.ConfigFile,
-		DataDir:       paths.AppDataDir,
+		Version:      DefaultVersion,
+		ImageTag:     DefaultImageTag,
+		Port:         DefaultPort,
+		LLMBaseURL:   DefaultLLMBaseURL,
+		DefaultModel: DefaultModel,
+		ConfigFile:   paths.ConfigFile,
+		DataDir:      paths.AppDataDir,
 	}
 }
 
@@ -77,9 +73,6 @@ func Save(path string, config *Config) error {
 }
 
 func Validate(config *Config) error {
-	if config.ImageRegistry == "" {
-		return fmt.Errorf("image_registry cannot be empty")
-	}
 	if config.ImageTag == "" {
 		return fmt.Errorf("image_tag cannot be empty")
 	}

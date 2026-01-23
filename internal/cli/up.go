@@ -27,9 +27,6 @@ This command will:
 
 			cfg := config.NewDefaultConfig(paths)
 
-			if imageRegistry != "" {
-				cfg.ImageRegistry = imageRegistry
-			}
 			if imageTag != "" {
 				cfg.ImageTag = imageTag
 			}
@@ -71,7 +68,6 @@ This command will:
 func init() {
 	rootCmd.AddCommand(upCmd)
 
-	upCmd.Flags().StringVar(&imageRegistry, "image-registry", config.DefaultImageRegistry, "Docker image registry (first install only)")
 	upCmd.Flags().StringVar(&imageTag, "image-tag", config.DefaultImageTag, "Docker image tag (first install only)")
 	upCmd.Flags().IntVar(&port, "port", config.DefaultPort, "Application port (first install only)")
 }

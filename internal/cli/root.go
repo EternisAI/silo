@@ -9,12 +9,11 @@ import (
 )
 
 var (
-	verbose       bool
-	configDir     string
-	imageRegistry string
-	imageTag      string
-	port          int
-	log           *logger.Logger
+	verbose   bool
+	configDir string
+	imageTag  string
+	port      int
+	log       *logger.Logger
 )
 
 var rootCmd = &cobra.Command{
