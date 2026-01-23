@@ -46,3 +46,44 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+  inference-engine:
+    image: ghcr.io/ggml-org/llama.cpp:full-cuda
+    ports:
+      - "30000:30000"
+    volumes:
+      - /data/models:/models:ro
+    shm_size: '16g'
+    ipc: host
+    command:
+      - --server
+      - -m
+      - /models/GLM-4.7-Q4_K_M.gguf
+      - -c
+      - "32768"
+      - -b
+      - "2048"
+      - -ngl
+      - "999"
+      - --tensor-split
+      - 1,1,1
+      - -mg
+      - "0"
+      - -t
+      - "16"
+      - --threads-http
+      - "8"
+      - -fit
+      - "off"
+      - --host
+      - 0.0.0.0
+      - --port
+      - "30000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0', '1', '2']
+              capabilities: [gpu]
+    restart: unless-stopped
