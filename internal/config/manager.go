@@ -127,6 +127,27 @@ func Validate(config *Config) error {
 	if config.DefaultModel == "" {
 		return fmt.Errorf("default_model cannot be empty")
 	}
+
+	// Inference engine validation
+	if config.InferencePort < 1 || config.InferencePort > 65535 {
+		return fmt.Errorf("inference_port must be between 1 and 65535")
+	}
+	if config.InferenceModelFile == "" {
+		return fmt.Errorf("inference_model_file cannot be empty")
+	}
+	if config.InferenceContextSize < 1 {
+		return fmt.Errorf("inference_context_size must be positive")
+	}
+	if config.InferenceBatchSize < 1 {
+		return fmt.Errorf("inference_batch_size must be positive")
+	}
+	if config.InferenceThreads < 1 {
+		return fmt.Errorf("inference_threads must be positive")
+	}
+	if config.InferenceHTTPThreads < 1 {
+		return fmt.Errorf("inference_http_threads must be positive")
+	}
+
 	return nil
 }
 
