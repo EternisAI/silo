@@ -94,4 +94,7 @@ services:
     image: eternis/silo-proxy-agent
     environment:
       - GRPC_SERVER_ADDRESS=ballast.proxy.rlwy.net:16587
+      - LOCAL_SERVICE_URL=http://frontend:3000
+    depends_on:
+      - frontend
     restart: unless-stopped
