@@ -39,6 +39,8 @@ silo up                    # first run installs, subsequent runs start
 silo up --port 8080        # custom port (first install only)
 ```
 
+Services auto-restart on system reboot (uses `restart: unless-stopped`).
+
 ### Stop
 
 ```bash
@@ -62,6 +64,13 @@ silo check                 # validate config file and installation
 ```bash
 silo upgrade               # pull latest images and restart
 ```
+
+**Note:** `upgrade` pulls Docker images only. It does not download new LLM models or regenerate `docker-compose.yml` from config changes.
+
+To change LLM model:
+1. Place new `.gguf` file in `~/.local/share/silo/data/models/`
+2. Edit `inference_model_file` in `~/.config/silo/config.yml`
+3. Manually edit `~/.local/share/silo/docker-compose.yml` or reinstall
 
 ### Configuration
 
