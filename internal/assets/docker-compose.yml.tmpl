@@ -54,7 +54,7 @@ services:
     ports:
       - "{{.InferencePort}}:{{.InferencePort}}"
     volumes:
-      - {{.InferenceModelsDir}}:/models:ro
+      - {{.DataDir}}/models:/models:ro
     shm_size: '{{.InferenceShmSize}}'
     ipc: host
     command:
