@@ -1,11 +1,8 @@
 package docker
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -59,7 +56,7 @@ func Down(ctx context.Context, composePath string, removeVolumes bool) error {
 
 func Pull(ctx context.Context, composePath string) error {
 	composeCmd := GetComposeCommand()
-	args := append(composeCmd[1:], "-f", composePath, "pull")
+	args := append(composeCmd[1:], "-f", composePath, "pull", "--ignore-pull-failures")
 	cmd := exec.CommandContext(ctx, composeCmd[0], args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -73,7 +70,7 @@ func Pull(ctx context.Context, composePath string) error {
 
 func Ps(ctx context.Context, composePath string) ([]Container, error) {
 	composeCmd := GetComposeCommand()
-	args := append(composeCmd[1:], "-f", composePath, "ps", "--format", "json")
+	args := append(composeCmd[1:], "-f", composePath, "ps", "-q")
 	cmd := exec.CommandContext(ctx, composeCmd[0], args...)
 	cmd.Dir = filepath.Dir(composePath)
 
@@ -82,28 +79,37 @@ func Ps(ctx context.Context, composePath string) ([]Container, error) {
 		return nil, fmt.Errorf("failed to list containers: %w", err)
 	}
 
+	containerIDs := strings.TrimSpace(string(output))
+	if containerIDs == "" {
+		return []Container{}, nil
+	}
+
+	ids := strings.Split(containerIDs, "\n")
+
+	inspectCmd := exec.CommandContext(ctx, "docker", "inspect", "--format",
+		"{{.Name}}|{{.State.Status}}|{{.State.Status}}|{{.Config.Image}}|{{index .Config.Labels \"com.docker.compose.service\"}}")
+	inspectCmd.Args = append(inspectCmd.Args, ids...)
+
+	inspectOutput, err := inspectCmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to inspect containers: %w", err)
+	}
+
 	var containers []Container
-	decoder := json.NewDecoder(bytes.NewReader(output))
-	for {
-		var c struct {
-			Name    string `json:"Name"`
-			State   string `json:"State"`
-			Status  string `json:"Status"`
-			Image   string `json:"Image"`
-			Service string `json:"Service"`
-		}
-		if err := decoder.Decode(&c); err == io.EOF {
-			break
-		} else if err != nil {
-			return nil, fmt.Errorf("failed to parse container info: %w", err)
+	lines := strings.Split(strings.TrimSpace(string(inspectOutput)), "\n")
+	for _, line := range lines {
+		parts := strings.Split(line, "|")
+		if len(parts) != 5 {
+			continue
 		}
 
+		name := strings.TrimPrefix(parts[0], "/")
 		containers = append(containers, Container{
-			Name:    c.Name,
-			State:   c.State,
-			Status:  c.Status,
-			Image:   c.Image,
-			Service: c.Service,
+			Name:    name,
+			State:   parts[1],
+			Status:  parts[2],
+			Image:   parts[3],
+			Service: parts[4],
 		})
 	}
 
