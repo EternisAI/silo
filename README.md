@@ -51,6 +51,12 @@ silo down
 silo status
 ```
 
+### Check Configuration
+
+```bash
+silo check                 # validate config file and installation
+```
+
 ### Upgrade
 
 ```bash
