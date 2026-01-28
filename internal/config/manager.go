@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 
 	"gopkg.in/yaml.v3"
 )
@@ -176,4 +177,39 @@ func SaveState(path string, state *State) error {
 	}
 
 	return nil
+}
+
+// FindUnknownFields returns a list of field names in the config file that are not recognized.
+func FindUnknownFields(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	// Parse YAML into a map to get all keys
+	var rawConfig map[string]interface{}
+	if err := yaml.Unmarshal(data, &rawConfig); err != nil {
+		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	// Get known fields from Config struct tags
+	knownFields := make(map[string]bool)
+	t := reflect.TypeOf(Config{})
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		tag := field.Tag.Get("yaml")
+		if tag != "" && tag != "-" {
+			knownFields[tag] = true
+		}
+	}
+
+	// Find unknown fields
+	var unknown []string
+	for key := range rawConfig {
+		if !knownFields[key] {
+			unknown = append(unknown, key)
+		}
+	}
+
+	return unknown, nil
 }

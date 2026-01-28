@@ -35,6 +35,18 @@ This command will:
 		}
 		log.Success("Config file parsed successfully")
 
+		// Check for unknown fields
+		unknownFields, err := config.FindUnknownFields(paths.ConfigFile)
+		if err != nil {
+			log.Error("Failed to check for unknown fields: %v", err)
+			return err
+		}
+		if len(unknownFields) > 0 {
+			for _, field := range unknownFields {
+				log.Warn("Unknown config field: %s", field)
+			}
+		}
+
 		// Validate config values
 		if err := config.Validate(cfg); err != nil {
 			log.Error("Invalid configuration: %v", err)
