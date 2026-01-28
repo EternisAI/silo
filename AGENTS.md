@@ -21,7 +21,7 @@ silo/
 ├── cmd/silo/           # CLI entry point
 ├── internal/
 │   ├── assets/         # Embedded templates (docker-compose.yml.tmpl, config.yml.tmpl)
-│   ├── cli/            # Cobra commands (up, down, status, logs, upgrade)
+│   ├── cli/            # Cobra commands (up, down, status, logs, upgrade, check)
 │   ├── config/         # Config loading/saving
 │   ├── docker/         # Docker Compose operations
 │   ├── installer/      # First-run installation logic
@@ -39,6 +39,7 @@ silo/
 | `silo status` | Show service status |
 | `silo logs` | View container logs |
 | `silo upgrade` | Pull latest images and restart |
+| `silo check` | Validate configuration file |
 
 ## Related
 

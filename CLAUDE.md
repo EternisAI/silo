@@ -23,6 +23,7 @@ make dev ARGS="up"  # Run without building (go run)
 | `silo status` | Show service status |
 | `silo logs` | View container logs |
 | `silo upgrade` | Pull latest images and restart |
+| `silo check` | Validate configuration file |
 
 ## Related
 
