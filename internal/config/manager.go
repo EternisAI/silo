@@ -28,7 +28,7 @@ const (
 	DefaultInferenceThreads     = 16
 	DefaultInferenceHTTPThreads = 8
 	DefaultInferenceFit         = "off"
-	DefaultInferenceGPUDevices  = "'0', '1', '2'"
+	DefaultInferenceGPUDevices  = `"0", "1", "2"`
 )
 
 type Config struct {
