@@ -2,13 +2,54 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/eternisai/silo/internal/config"
 	"github.com/eternisai/silo/internal/updater"
 	versionpkg "github.com/eternisai/silo/internal/version"
+	"github.com/eternisai/silo/pkg/logger"
 	"github.com/spf13/cobra"
 )
+
+type UpgradeOutput struct {
+	PreCheck PreCheckInfo `json:"pre_check"`
+	Upgrade  UpgradeInfo  `json:"upgrade"`
+	Error    *ErrorInfo   `json:"error,omitempty"`
+	Success  bool         `json:"success"`
+}
+
+type PreCheckInfo struct {
+	CLI    *CLICheckInfo    `json:"cli,omitempty"`
+	Images []ImageCheckInfo `json:"images,omitempty"`
+}
+
+type CLICheckInfo struct {
+	Current     string `json:"current"`
+	Latest      string `json:"latest"`
+	NeedsUpdate bool   `json:"needs_update"`
+	UpdateURL   string `json:"update_url,omitempty"`
+}
+
+type ImageCheckInfo struct {
+	Name        string `json:"name"`
+	Current     string `json:"current"`
+	Latest      string `json:"latest"`
+	NeedsUpdate bool   `json:"needs_update"`
+}
+
+type UpgradeInfo struct {
+	StartedAt   string `json:"started_at"`
+	CompletedAt string `json:"completed_at,omitempty"`
+}
+
+type ErrorInfo struct {
+	Message string `json:"message"`
+	Step    string `json:"step,omitempty"`
+}
+
+var upgradeJSONOutput bool
 
 var upgradeCmd = &cobra.Command{
 	Use:   "upgrade",
@@ -23,6 +64,11 @@ This command will:
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		paths := config.NewPaths(configDir)
+
+		startTime := time.Now()
+		var output UpgradeOutput
+		output.Upgrade.StartedAt = startTime.Format(time.RFC3339)
+		output.Success = false
 
 		cfg, err := config.Load(paths.ConfigFile)
 		if err != nil {
@@ -39,12 +85,24 @@ This command will:
 		cancel()
 
 		if err != nil {
-			log.Warn("Could not check for latest CLI version: %v", err)
-		} else if versionInfo.NeedsUpdate {
-			log.Info("CLI: Upgrading from %s to %s", versionInfo.Current, versionInfo.Latest)
-			log.Info("Release notes: %s", versionInfo.UpdateURL)
+			if !upgradeJSONOutput {
+				log.Warn("Could not check for latest CLI version: %v", err)
+			}
 		} else {
-			log.Info("CLI: Already running latest version %s", versionInfo.Current)
+			output.PreCheck.CLI = &CLICheckInfo{
+				Current:     versionInfo.Current,
+				Latest:      versionInfo.Latest,
+				NeedsUpdate: versionInfo.NeedsUpdate,
+				UpdateURL:   versionInfo.UpdateURL,
+			}
+			if !upgradeJSONOutput {
+				if versionInfo.NeedsUpdate {
+					log.Info("CLI: Upgrading from %s to %s", versionInfo.Current, versionInfo.Latest)
+					log.Info("Release notes: %s", versionInfo.UpdateURL)
+				} else {
+					log.Info("CLI: Already running latest version %s", versionInfo.Current)
+				}
+			}
 		}
 
 		checkCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
@@ -52,31 +110,67 @@ This command will:
 		cancel()
 
 		if err != nil {
-			log.Debug("Could not check image versions: %v", err)
-		} else {
-			log.Info("Docker Images (current tag: %s):", cfg.ImageTag)
-			for _, img := range imageVersions {
-				if img.NeedsUpdate {
-					log.Info("  %s: %s → %s available", img.ImageName, img.Current, img.Latest)
-				} else {
-					log.Info("  %s: %s (up to date)", img.ImageName, img.Current)
-				}
+			if !upgradeJSONOutput {
+				log.Debug("Could not check image versions: %v", err)
 			}
-			log.Info("")
-			log.Info("Note: This upgrade pulls images with tag '%s'", cfg.ImageTag)
-			log.Info("To use a different version, edit image_tag in config.yml first")
+		} else {
+			for _, img := range imageVersions {
+				output.PreCheck.Images = append(output.PreCheck.Images, ImageCheckInfo{
+					Name:        img.ImageName,
+					Current:     img.Current,
+					Latest:      img.Latest,
+					NeedsUpdate: img.NeedsUpdate,
+				})
+			}
+			if !upgradeJSONOutput {
+				log.Info("Docker Images (current tag: %s):", cfg.ImageTag)
+				for _, img := range imageVersions {
+					if img.NeedsUpdate {
+						log.Info("  %s: %s → %s available", img.ImageName, img.Current, img.Latest)
+					} else {
+						log.Info("  %s: %s (up to date)", img.ImageName, img.Current)
+					}
+				}
+				log.Info("")
+				log.Info("Note: This upgrade pulls images with tag '%s'", cfg.ImageTag)
+				log.Info("To use a different version, edit image_tag in config.yml first")
+			}
+		}
+
+		if upgradeJSONOutput {
+			log = logger.NewSilent()
 		}
 
 		upd := updater.New(cfg, paths, log)
-		if err := upd.Update(ctx); err != nil {
-			log.Error("Upgrade failed: %v", err)
-			return err
+		err = upd.Update(ctx)
+
+		output.Upgrade.CompletedAt = time.Now().Format(time.RFC3339)
+
+		if err != nil {
+			output.Error = &ErrorInfo{
+				Message: err.Error(),
+			}
+			output.Success = false
+		} else {
+			output.Success = true
 		}
 
-		return nil
+		if upgradeJSONOutput {
+			jsonData, jsonErr := json.MarshalIndent(output, "", "  ")
+			if jsonErr != nil {
+				log.Error("Failed to marshal JSON: %v", jsonErr)
+				return jsonErr
+			}
+			fmt.Println(string(jsonData))
+		} else if err != nil {
+			log.Error("Upgrade failed: %v", err)
+		}
+
+		return err
 	},
 }
 
 func init() {
+	upgradeCmd.Flags().BoolVar(&upgradeJSONOutput, "json", false, "Output in JSON format")
 	rootCmd.AddCommand(upgradeCmd)
 }
