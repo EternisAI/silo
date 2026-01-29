@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/eternisai/silo/internal/config"
 	versionpkg "github.com/eternisai/silo/internal/version"
 	"github.com/spf13/cobra"
 )
@@ -30,16 +31,46 @@ var versionCmd = &cobra.Command{
 
 		versionInfo, err := versionpkg.Check(ctx, version)
 		if err != nil {
-			log.Debug("Failed to check for updates: %v", err)
+			log.Debug("Failed to check for CLI updates: %v", err)
+		} else {
+			if versionInfo.NeedsUpdate {
+				log.Warn("New CLI version available: %s (current: %s)", versionInfo.Latest, versionInfo.Current)
+				log.Info("Run 'silo upgrade' to update")
+				log.Info("Release notes: %s", versionInfo.UpdateURL)
+				fmt.Println()
+			} else {
+				log.Success("CLI is up to date")
+				fmt.Println()
+			}
+		}
+
+		paths := config.NewPaths(configDir)
+		state, err := config.LoadState(paths.StateFile)
+		if err != nil {
+			log.Debug("Silo not installed, skipping image version check")
 			return
 		}
 
-		if versionInfo.NeedsUpdate {
-			log.Warn("New version available: %s (current: %s)", versionInfo.Latest, versionInfo.Current)
-			log.Info("Run 'silo upgrade' to update")
-			log.Info("Release notes: %s", versionInfo.UpdateURL)
-		} else {
-			log.Success("You are running the latest version")
+		log.Info("Docker Images (current tag: %s)", state.ImageTag)
+		imageVersions, err := versionpkg.CheckImageVersions(ctx, state.ImageTag)
+		if err != nil {
+			log.Debug("Failed to check image versions: %v", err)
+			return
+		}
+
+		anyUpdates := false
+		for _, img := range imageVersions {
+			if img.NeedsUpdate {
+				log.Warn("  %s: %s → %s (update available)", img.ImageName, img.Current, img.Latest)
+				anyUpdates = true
+			} else {
+				log.Success("  %s: %s (up to date)", img.ImageName, img.Current)
+			}
+		}
+
+		if anyUpdates {
+			fmt.Println()
+			log.Info("To update images, edit ~/.config/silo/config.yml and run 'silo upgrade'")
 		}
 	},
 }
