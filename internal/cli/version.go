@@ -47,7 +47,7 @@ var versionCmd = &cobra.Command{
 		paths := config.NewPaths(configDir)
 		cfg, err := config.Load(paths.ConfigFile)
 		if err != nil {
-			log.Debug("Silo not installed, skipping image version check")
+			log.Debug("Could not load config file, skipping image version check: %v", err)
 			return
 		}
 
