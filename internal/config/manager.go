@@ -114,6 +114,21 @@ func Save(path string, config *Config) error {
 	return nil
 }
 
+// UpdateImageTag updates the image_tag field in the config and saves it
+func UpdateImageTag(cfg *Config, newTag string, configPath string) error {
+	cfg.ImageTag = newTag
+
+	if err := Validate(cfg); err != nil {
+		return fmt.Errorf("config validation failed with new tag: %w", err)
+	}
+
+	if err := Save(configPath, cfg); err != nil {
+		return fmt.Errorf("failed to save updated config: %w", err)
+	}
+
+	return nil
+}
+
 func Validate(config *Config) error {
 	if config.ImageTag == "" {
 		return fmt.Errorf("image_tag cannot be empty")

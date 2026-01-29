@@ -129,7 +129,7 @@ var versionCmd = &cobra.Command{
 				}
 				if anyUpdates {
 					fmt.Println()
-					fmt.Printf("To update images, edit %s and run 'silo upgrade'\n", paths.ConfigFile)
+					fmt.Printf("Run 'silo upgrade' to update to the latest versions\n")
 				}
 			}
 		}

@@ -114,6 +114,7 @@ This command will:
 				log.Debug("Could not check image versions: %v", err)
 			}
 		} else {
+			anyUpdates := false
 			for _, img := range imageVersions {
 				output.PreCheck.Images = append(output.PreCheck.Images, ImageCheckInfo{
 					Name:        img.ImageName,
@@ -121,6 +122,9 @@ This command will:
 					Latest:      img.Latest,
 					NeedsUpdate: img.NeedsUpdate,
 				})
+				if img.NeedsUpdate {
+					anyUpdates = true
+				}
 			}
 			if !upgradeJSONOutput {
 				log.Info("Docker Images (current tag: %s):", cfg.ImageTag)
@@ -131,9 +135,10 @@ This command will:
 						log.Info("  %s: %s (up to date)", img.ImageName, img.Current)
 					}
 				}
-				log.Info("")
-				log.Info("Note: This upgrade pulls images with tag '%s'", cfg.ImageTag)
-				log.Info("To use a different version, edit image_tag in config.yml first")
+				if anyUpdates {
+					log.Info("")
+					log.Info("This upgrade will automatically update to the latest versions")
+				}
 			}
 		}
 

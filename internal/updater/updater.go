@@ -8,6 +8,7 @@ import (
 
 	"github.com/eternisai/silo/internal/config"
 	"github.com/eternisai/silo/internal/docker"
+	"github.com/eternisai/silo/internal/version"
 	"github.com/eternisai/silo/pkg/logger"
 )
 
@@ -36,6 +37,15 @@ func (u *Updater) Update(ctx context.Context) error {
 		return fmt.Errorf("failed to backup config: %w", err)
 	}
 
+	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	newTag, err := u.updateConfigWithLatestVersion(checkCtx)
+	cancel()
+
+	if err != nil {
+		u.logger.Warn("Could not auto-update to latest version: %v", err)
+		u.logger.Info("Continuing with current version %s", u.config.ImageTag)
+	}
+
 	if err := u.pullImages(ctx); err != nil {
 		return fmt.Errorf("failed to pull images: %w", err)
 	}
@@ -48,7 +58,11 @@ func (u *Updater) Update(ctx context.Context) error {
 		return fmt.Errorf("failed to update state: %w", err)
 	}
 
-	u.logger.Success("Silo updated successfully!")
+	if newTag != "" {
+		u.logger.Success("Silo upgraded to version %s successfully!", newTag)
+	} else {
+		u.logger.Success("Silo updated successfully!")
+	}
 	return nil
 }
 
@@ -67,6 +81,42 @@ func (u *Updater) backupConfig() error {
 
 	u.logger.Success("Configuration backed up to %s", backupPath)
 	return nil
+}
+
+func (u *Updater) updateConfigWithLatestVersion(ctx context.Context) (string, error) {
+	u.logger.Info("Checking for latest Docker image versions...")
+
+	imageVersions, err := version.CheckImageVersions(ctx, u.config.ImageTag)
+	if err != nil {
+		return "", fmt.Errorf("failed to check image versions: %w", err)
+	}
+
+	if len(imageVersions) == 0 {
+		return "", fmt.Errorf("no image version information available")
+	}
+
+	latestTag := imageVersions[0].Latest
+	currentTag := u.config.ImageTag
+
+	if !imageVersions[0].NeedsUpdate {
+		u.logger.Info("Already running latest version %s", currentTag)
+		return currentTag, nil
+	}
+
+	u.logger.Info("Updating image tag: %s → %s", currentTag, latestTag)
+
+	if err := config.UpdateImageTag(u.config, latestTag, u.paths.ConfigFile); err != nil {
+		return "", fmt.Errorf("failed to update config: %w", err)
+	}
+	u.logger.Success("Config updated with new image tag")
+
+	u.logger.Info("Regenerating docker-compose.yml...")
+	if err := config.GenerateDockerCompose(u.config, u.paths.ComposeFile); err != nil {
+		return "", fmt.Errorf("failed to regenerate docker-compose: %w", err)
+	}
+	u.logger.Success("Docker-compose regenerated with new image versions")
+
+	return latestTag, nil
 }
 
 func (u *Updater) pullImages(ctx context.Context) error {
