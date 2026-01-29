@@ -45,14 +45,14 @@ var versionCmd = &cobra.Command{
 		}
 
 		paths := config.NewPaths(configDir)
-		state, err := config.LoadState(paths.StateFile)
+		cfg, err := config.Load(paths.ConfigFile)
 		if err != nil {
 			log.Debug("Silo not installed, skipping image version check")
 			return
 		}
 
-		log.Info("Docker Images (current tag: %s)", state.ImageTag)
-		imageVersions, err := versionpkg.CheckImageVersions(ctx, state.ImageTag)
+		log.Info("Docker Images (configured tag: %s)", cfg.ImageTag)
+		imageVersions, err := versionpkg.CheckImageVersions(ctx, cfg.ImageTag)
 		if err != nil {
 			log.Debug("Failed to check image versions: %v", err)
 			return
