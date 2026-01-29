@@ -56,7 +56,10 @@ func Down(ctx context.Context, composePath string, removeVolumes bool) error {
 
 func Pull(ctx context.Context, composePath string) error {
 	composeCmd := GetComposeCommand()
-	args := append(composeCmd[1:], "-f", composePath, "pull", "--ignore-pull-failures")
+	services := []string{"backend", "frontend"}
+	args := append(composeCmd[1:], "-f", composePath, "pull")
+	args = append(args, services...)
+
 	cmd := exec.CommandContext(ctx, composeCmd[0], args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
