@@ -73,7 +73,7 @@ func CompareVersions(current, latest string) bool {
 	latest = strings.TrimPrefix(latest, "v")
 
 	if current == "dev" {
-		return true
+		return false
 	}
 
 	return current != latest

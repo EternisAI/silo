@@ -109,12 +109,12 @@ This command will:
 		imageVersions, err := versionpkg.CheckImageVersions(checkCtx, cfg.ImageTag)
 		cancel()
 
+		anyImageUpdates := false
 		if err != nil {
 			if !upgradeJSONOutput {
 				log.Debug("Could not check image versions: %v", err)
 			}
 		} else {
-			anyUpdates := false
 			for _, img := range imageVersions {
 				output.PreCheck.Images = append(output.PreCheck.Images, ImageCheckInfo{
 					Name:        img.ImageName,
@@ -123,7 +123,7 @@ This command will:
 					NeedsUpdate: img.NeedsUpdate,
 				})
 				if img.NeedsUpdate {
-					anyUpdates = true
+					anyImageUpdates = true
 				}
 			}
 			if !upgradeJSONOutput {
@@ -135,11 +135,30 @@ This command will:
 						log.Info("  %s: %s (up to date)", img.ImageName, img.Current)
 					}
 				}
-				if anyUpdates {
+				if anyImageUpdates {
 					log.Info("")
 					log.Info("This upgrade will automatically update to the latest versions")
 				}
 			}
+		}
+
+		if !anyImageUpdates {
+			if !upgradeJSONOutput {
+				log.Info("")
+				log.Success("All services are already up to date. No upgrade needed.")
+			}
+			output.Upgrade.CompletedAt = time.Now().Format(time.RFC3339)
+			output.Success = true
+
+			if upgradeJSONOutput {
+				jsonData, jsonErr := json.MarshalIndent(output, "", "  ")
+				if jsonErr != nil {
+					log.Error("Failed to marshal JSON: %v", jsonErr)
+					return jsonErr
+				}
+				fmt.Println(string(jsonData))
+			}
+			return nil
 		}
 
 		if upgradeJSONOutput {
