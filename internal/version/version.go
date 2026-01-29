@@ -133,15 +133,17 @@ func CheckDockerHubImage(ctx context.Context, namespace, repository string) (str
 
 func findLatestSemanticTag(tags []DockerHubTag) string {
 	var latestTag string
+	var latestVersion string
 	for _, tag := range tags {
 		name := tag.Name
 		if name == "latest" || name == "dev" {
 			continue
 		}
-		name = strings.TrimPrefix(name, "v")
-		if isSemanticVersion(name) {
-			if latestTag == "" || compareSemanticVersions(name, latestTag) > 0 {
+		trimmedName := strings.TrimPrefix(name, "v")
+		if isSemanticVersion(trimmedName) {
+			if latestVersion == "" || compareSemanticVersions(trimmedName, latestVersion) > 0 {
 				latestTag = tag.Name
+				latestVersion = trimmedName
 			}
 		}
 	}
