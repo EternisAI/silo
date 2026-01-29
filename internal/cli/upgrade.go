@@ -2,9 +2,11 @@ package cli
 
 import (
 	"context"
+	"time"
 
 	"github.com/eternisai/silo/internal/config"
 	"github.com/eternisai/silo/internal/updater"
+	versionpkg "github.com/eternisai/silo/internal/version"
 	"github.com/spf13/cobra"
 )
 
@@ -31,6 +33,20 @@ This command will:
 
 		cfg.ConfigFile = paths.ConfigFile
 		cfg.DataDir = paths.AppDataDir
+
+		checkCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		versionInfo, err := versionpkg.Check(checkCtx, version)
+		cancel()
+
+		if err != nil {
+			log.Warn("Could not check for latest version: %v", err)
+			log.Info("Proceeding with upgrade anyway...")
+		} else if versionInfo.NeedsUpdate {
+			log.Info("Upgrading from %s to %s", versionInfo.Current, versionInfo.Latest)
+			log.Info("Release notes: %s", versionInfo.UpdateURL)
+		} else {
+			log.Info("Already running latest version %s", versionInfo.Current)
+		}
 
 		upd := updater.New(cfg, paths, log)
 		if err := upd.Update(ctx); err != nil {
