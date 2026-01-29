@@ -8,6 +8,7 @@ import (
 
 	"github.com/eternisai/silo/internal/config"
 	versionpkg "github.com/eternisai/silo/internal/version"
+	"github.com/eternisai/silo/pkg/logger"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -45,6 +46,10 @@ var versionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
+
+		if jsonOutput {
+			log = logger.NewSilent()
+		}
 
 		var output VersionOutput
 		output.CLI = CLIInfo{
