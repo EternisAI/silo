@@ -16,10 +16,10 @@ type ReleaseInfo struct {
 }
 
 type VersionInfo struct {
-	Current     string
-	Latest      string
-	UpdateURL   string
-	NeedsUpdate bool
+	Current     string `json:"current"`
+	Latest      string `json:"latest"`
+	UpdateURL   string `json:"update_url"`
+	NeedsUpdate bool   `json:"needs_update"`
 }
 
 type DockerHubTag struct {
