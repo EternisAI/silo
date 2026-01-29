@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	DefaultVersion    = "0.1.0"
-	DefaultImageTag   = "0.1.1"
-	DefaultPort       = 3000
+	DefaultVersion    = "0.1.2"
+	DefaultImageTag   = "0.1.2"
+	DefaultPort       = 80
 	DefaultLLMBaseURL = "http://inference-engine:30000/v1"
 	DefaultModel      = "GLM-4.7-Q4_K_M.gguf"
 
