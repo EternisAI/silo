@@ -104,7 +104,6 @@ func (u *Updater) updateState() error {
 	}
 
 	state.LastUpdated = time.Now().Format(time.RFC3339)
-	state.ImageTag = u.config.ImageTag
 
 	if err := config.SaveState(u.paths.StateFile, state); err != nil {
 		return err

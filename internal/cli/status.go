@@ -24,15 +24,26 @@ var statusCmd = &cobra.Command{
 			return nil
 		}
 
+		cfg, err := config.Load(paths.ConfigFile)
+		if err != nil {
+			log.Debug("Could not load config file: %v", err)
+		}
+
 		state, err := config.LoadState(paths.StateFile)
 		if err != nil {
 			log.Debug("Could not load state file: %v", err)
-		} else {
+		}
+
+		if cfg != nil || state != nil {
 			log.Info("Installation Details:")
-			log.Info("  Version: %s", state.Version)
-			log.Info("  Image Tag: %s", state.ImageTag)
-			log.Info("  Installed: %s", state.InstalledAt)
-			log.Info("  Last Updated: %s", state.LastUpdated)
+			if cfg != nil {
+				log.Info("  Image Tag: %s", cfg.ImageTag)
+			}
+			if state != nil {
+				log.Info("  CLI Version: %s", state.Version)
+				log.Info("  Installed: %s", state.InstalledAt)
+				log.Info("  Last Updated: %s", state.LastUpdated)
+			}
 			fmt.Println()
 		}
 

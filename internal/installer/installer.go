@@ -148,7 +148,6 @@ func (i *Installer) saveState() error {
 		Version:     i.config.Version,
 		InstalledAt: time.Now().Format(time.RFC3339),
 		LastUpdated: time.Now().Format(time.RFC3339),
-		ImageTag:    i.config.ImageTag,
 	}
 
 	if err := config.SaveState(i.paths.StateFile, state); err != nil {

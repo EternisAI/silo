@@ -59,7 +59,6 @@ type State struct {
 	Version     string `json:"version"`
 	InstalledAt string `json:"installed_at"`
 	LastUpdated string `json:"last_updated"`
-	ImageTag    string `json:"image_tag"`
 }
 
 func NewDefaultConfig(paths *Paths) *Config {
