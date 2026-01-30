@@ -29,6 +29,7 @@ cp bin/silo ~/.local/bin/
 ```
 
 Add to PATH if needed (~/.bashrc):
+
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 ```
@@ -74,12 +75,14 @@ silo upgrade --json        # JSON output for automation
 ```
 
 **Important:** Upgrade only updates Docker images (backend, frontend). It preserves:
+
 - Configuration files
 - Database volumes
 - Model files
 - Application data
 
 To change the LLM model after upgrade:
+
 1. Place new `.gguf` file in `~/.local/share/silo/data/models/`
 2. Edit `inference_model_file` in `~/.config/silo/config.yml`
 3. Run `silo down && silo up`
@@ -97,6 +100,42 @@ silo version               # show CLI and application versions
 silo version --json        # JSON output
 ```
 
+## Daemon (Remote Control)
+
+Run a background service with HTTP API for remote management over LAN:
+
+```bash
+# Build and start daemon
+make build-daemon
+./bin/silod                                    # localhost only (default)
+SILO_DAEMON_BIND_ADDRESS=0.0.0.0 ./bin/silod  # enable LAN access
+```
+
+### API Endpoints
+
+```bash
+# Check version
+curl http://localhost:9999/api/v1/version | jq
+
+# Start/install Silo
+curl -X POST http://localhost:9999/api/v1/up
+
+# Stop Silo
+curl -X POST http://localhost:9999/api/v1/down
+
+# Restart service
+curl -X POST http://localhost:9999/api/v1/restart -d '{"service":"backend"}'
+
+# Upgrade to latest
+curl -X POST http://localhost:9999/api/v1/upgrade
+
+# Get logs
+curl "http://localhost:9999/api/v1/logs?service=backend&lines=50"
+
+# Validate config
+curl http://localhost:9999/api/v1/check | jq
+```
+
 ## Configuration
 
 Edit `~/.config/silo/config.yml` then restart:
@@ -107,14 +146,14 @@ silo down && silo up
 
 ### Key Settings
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `port` | 80 | Frontend port |
-| `image_tag` | 0.1.2 | Docker image version |
-| `inference_model_file` | GLM-4.7-Q4_K_M.gguf | LLM model file |
-| `inference_gpu_layers` | 999 | GPU layers (999 = all) |
-| `inference_context_size` | 8192 | Token context window |
-| `inference_gpu_devices` | "0", "1", "2" | GPU device IDs |
+| Setting                  | Default             | Description            |
+| ------------------------ | ------------------- | ---------------------- |
+| `port`                   | 80                  | Frontend port          |
+| `image_tag`              | 0.1.2               | Docker image version   |
+| `inference_model_file`   | GLM-4.7-Q4_K_M.gguf | LLM model file         |
+| `inference_gpu_layers`   | 999                 | GPU layers (999 = all) |
+| `inference_context_size` | 8192                | Token context window   |
+| `inference_gpu_devices`  | "0", "1", "2"       | GPU device IDs         |
 
 ## Directory Structure
 
@@ -147,11 +186,12 @@ docker volume prune
 ## Development
 
 ```bash
-make build                 # Build binary to bin/silo
+make build                 # Build CLI binary to bin/silo
+make build-daemon          # Build daemon binary to bin/silod
 make test                  # Run tests
 make fmt                   # Format code
 make lint                  # Run golangci-lint
-make dev ARGS="up"         # Run without building
+make dev ARGS="up"         # Run CLI without building
 ```
 
 ## Related Projects
