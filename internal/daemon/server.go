@@ -12,18 +12,20 @@ import (
 
 // Server provides HTTP API for daemon
 type Server struct {
-	port   int
-	daemon *Daemon
-	logger *logger.Logger
-	server *http.Server
+	bindAddr string
+	port     int
+	daemon   *Daemon
+	logger   *logger.Logger
+	server   *http.Server
 }
 
 // NewServer creates a new HTTP server
-func NewServer(port int, daemon *Daemon, log *logger.Logger) *Server {
+func NewServer(bindAddr string, port int, daemon *Daemon, log *logger.Logger) *Server {
 	return &Server{
-		port:   port,
-		daemon: daemon,
-		logger: log,
+		bindAddr: bindAddr,
+		port:     port,
+		daemon:   daemon,
+		logger:   log,
 	}
 }
 
@@ -31,17 +33,28 @@ func NewServer(port int, daemon *Daemon, log *logger.Logger) *Server {
 func (s *Server) Start(ctx context.Context) error {
 	mux := http.NewServeMux()
 
-	// Register handlers
+	// Register existing handlers
 	mux.HandleFunc("/health", s.handleHealth)
 	mux.HandleFunc("/status", s.handleStatus)
 	mux.HandleFunc("/stats", s.handleStats)
 
+	// Register command API handlers
+	mux.HandleFunc("/api/v1/up", s.handleUp)
+	mux.HandleFunc("/api/v1/down", s.handleDown)
+	mux.HandleFunc("/api/v1/restart", s.handleRestart)
+	mux.HandleFunc("/api/v1/upgrade", s.handleUpgrade)
+	mux.HandleFunc("/api/v1/logs", s.handleLogs)
+	mux.HandleFunc("/api/v1/version", s.handleVersion)
+	mux.HandleFunc("/api/v1/check", s.handleCheck)
+
 	s.server = &http.Server{
-		Addr:    fmt.Sprintf("127.0.0.1:%d", s.port),
-		Handler: mux,
+		Addr:         fmt.Sprintf("%s:%d", s.bindAddr, s.port),
+		Handler:      mux,
+		ReadTimeout:  10 * time.Minute,
+		WriteTimeout: 10 * time.Minute,
 	}
 
-	s.logger.Info("Starting API server on http://127.0.0.1:%d", s.port)
+	s.logger.Info("Starting API server on http://%s:%d", s.bindAddr, s.port)
 
 	errChan := make(chan error, 1)
 	go func() {

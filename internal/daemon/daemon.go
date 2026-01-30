@@ -22,6 +22,7 @@ type Daemon struct {
 	scheduler *Scheduler
 	server    *Server
 	logger    *logger.Logger
+	opLock    sync.Mutex // Prevents concurrent operations
 	wg        sync.WaitGroup
 }
 
@@ -33,19 +34,21 @@ type Config struct {
 	AutoRestart       bool
 	ServerEnabled     bool
 	ServerPort        int
+	ServerBindAddress string
 	LogFile           string
 }
 
 // DefaultConfig returns default daemon configuration
 func DefaultConfig() *Config {
 	return &Config{
-		MonitorInterval:  30 * time.Second,
-		VersionCheckCron: "0 2 * * *", // Daily at 2 AM
-		HealthCheckCron:  "*/5 * * * *", // Every 5 minutes
-		AutoRestart:      true,
-		ServerEnabled:    true,
-		ServerPort:       9999,
-		LogFile:          "",
+		MonitorInterval:   30 * time.Second,
+		VersionCheckCron:  "0 2 * * *",  // Daily at 2 AM
+		HealthCheckCron:   "*/5 * * * *", // Every 5 minutes
+		AutoRestart:       true,
+		ServerEnabled:     true,
+		ServerPort:        9999,
+		ServerBindAddress: "127.0.0.1", // Safe default (localhost only)
+		LogFile:           "",
 	}
 }
 
@@ -92,7 +95,12 @@ func New() (*Daemon, error) {
 
 	// Create API server if enabled
 	if daemonCfg.ServerEnabled {
-		d.server = NewServer(daemonCfg.ServerPort, d, log)
+		// Allow override via environment variable
+		bindAddr := os.Getenv("SILO_DAEMON_BIND_ADDRESS")
+		if bindAddr == "" {
+			bindAddr = daemonCfg.ServerBindAddress
+		}
+		d.server = NewServer(bindAddr, daemonCfg.ServerPort, d, log)
 	}
 
 	return d, nil
