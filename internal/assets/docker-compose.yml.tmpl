@@ -33,8 +33,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      inference-engine:
-        condition: service_started
     restart: unless-stopped
 
   frontend:
@@ -48,7 +46,7 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
-
+{{if .EnableInferenceEngine}}
   inference-engine:
     image: ghcr.io/ggml-org/llama.cpp:full-cuda
     ports:
@@ -89,7 +87,8 @@ services:
               device_ids: [{{.InferenceGPUDevices}}]
               capabilities: [gpu]
     restart: unless-stopped
-
+{{end}}
+{{if .EnableProxyAgent}}
   silo-proxy-agent:
     image: eternis/silo-proxy-agent
     environment:
@@ -98,3 +97,4 @@ services:
     depends_on:
       - frontend
     restart: unless-stopped
+{{end}}
