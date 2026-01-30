@@ -28,6 +28,7 @@ services:
       - DATABASE_URL=postgres://silobox:silobox@postgres:5432/silobox?sslmode=disable
       - PORT=8080
       - DATA_DIR=/app/data
+      - SILOD_BASE_URL=http://host.docker.internal:9999
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
