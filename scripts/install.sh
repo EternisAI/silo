@@ -4,6 +4,8 @@ set -e
 REPO="EternisAI/silo"
 INSTALL_DIR="$HOME/.local/bin"
 BINARY_NAME="silo"
+DAEMON_NAME="silod"
+SERVICE_FILE="silod.service"
 
 get_latest_release() {
   curl --silent "https://api.github.com/repos/$REPO/releases/latest" |
@@ -58,14 +60,43 @@ main() {
 
   mkdir -p "$INSTALL_DIR"
   mv "$TMP_DIR/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
+  mv "$TMP_DIR/$DAEMON_NAME" "$INSTALL_DIR/$DAEMON_NAME"
   chmod +x "$INSTALL_DIR/$BINARY_NAME"
+  chmod +x "$INSTALL_DIR/$DAEMON_NAME"
 
   echo "✓ Silo CLI installed to $INSTALL_DIR/$BINARY_NAME"
+  echo "✓ Silo Daemon installed to $INSTALL_DIR/$DAEMON_NAME"
 
   if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     echo ""
     echo "Add to PATH (add to ~/.bashrc):"
     echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+  fi
+
+  # Optional systemd service installation
+  if command -v systemctl &> /dev/null; then
+    echo ""
+    read -p "Install silod as systemd service? (y/N) " -r
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      echo "Installing systemd service..."
+      sudo cp "$TMP_DIR/scripts/$SERVICE_FILE" /etc/systemd/system/$SERVICE_FILE
+      sudo systemctl daemon-reload
+      echo "✓ Service installed"
+      echo ""
+      read -p "Enable and start silod service now? (y/N) " -r
+      if [[ $REPLY =~ ^[Yy]$ ]]; then
+        sudo systemctl enable $DAEMON_NAME
+        sudo systemctl start $DAEMON_NAME
+        echo "✓ Service enabled and started"
+        echo ""
+        echo "Check status with: sudo systemctl status $DAEMON_NAME"
+        echo "View logs with: sudo journalctl -u $DAEMON_NAME -f"
+      else
+        echo ""
+        echo "Enable with: sudo systemctl enable $DAEMON_NAME"
+        echo "Start with: sudo systemctl start $DAEMON_NAME"
+      fi
+    fi
   fi
 
   echo ""
