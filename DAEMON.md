@@ -81,12 +81,13 @@ SILO_STATE_DIR=/path/to/state    # Override state directory
 Default configuration (in `daemon.go`):
 
 ```go
-MonitorInterval:   30s              // Container check interval
-VersionCheckCron:  "0 2 * * *"      // Daily at 2 AM
-HealthCheckCron:   "*/5 * * * *"    // Every 5 minutes
-AutoRestart:       true             // Auto-restart failed containers
-ServerEnabled:     true             // Enable HTTP API
-ServerPort:        9999             // API port
+MonitorInterval:      30s              // Container check interval
+VersionCheckCron:     "0 2 * * *"      // Daily at 2 AM
+HealthCheckCron:      "*/5 * * * *"    // Every 5 minutes
+AutoRestart:          true             // Auto-restart failed containers
+ServerEnabled:        true             // Enable HTTP API
+ServerPort:           9999             // API port
+ServerBindAddress:    "0.0.0.0"        // Bind to all interfaces (allows container access)
 ```
 
 ## Features
@@ -113,6 +114,12 @@ Continuously monitors container health every 30 seconds:
 ### 3. HTTP API
 
 REST API on `http://127.0.0.1:9999`:
+
+**Access from:**
+- **Host machine**: `http://127.0.0.1:9999` or `http://localhost:9999`
+- **Docker containers**: `http://host.docker.internal:9999` (requires `extra_hosts` config)
+
+The daemon binds to `0.0.0.0:9999` to allow access from Docker containers (e.g., backend UI). Port 9999 is not exposed externally in docker-compose, so it's only accessible from the host and containers on the same host.
 
 #### `GET /health`
 Basic health check:

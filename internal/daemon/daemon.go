@@ -47,7 +47,7 @@ func DefaultConfig() *Config {
 		AutoRestart:       true,
 		ServerEnabled:     true,
 		ServerPort:        9999,
-		ServerBindAddress: "127.0.0.1", // Safe default (localhost only)
+		ServerBindAddress: "0.0.0.0", // Allow access from host and Docker containers
 		LogFile:           "",
 	}
 }
