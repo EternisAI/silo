@@ -57,6 +57,21 @@ This command will:
 			return err
 		}
 
+		cfg, err := config.Load(paths.ConfigFile)
+		if err != nil {
+			log.Error("Failed to load config: %v", err)
+			return err
+		}
+
+		cfg.ConfigFile = paths.ConfigFile
+		cfg.DataDir = paths.AppDataDir
+
+		log.Info("Regenerating docker-compose.yml from current configuration...")
+		if err := config.GenerateDockerCompose(cfg, paths.ComposeFile); err != nil {
+			log.Error("Failed to generate docker-compose: %v", err)
+			return err
+		}
+
 		if err := docker.Up(ctx, paths.ComposeFile); err != nil {
 			log.Error("Failed to start containers: %v", err)
 			return err
