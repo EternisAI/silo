@@ -30,7 +30,7 @@ func (u *Updater) Update(ctx context.Context) error {
 	u.logger.Info("Starting Silo update...")
 
 	if _, err := os.Stat(u.paths.ComposeFile); os.IsNotExist(err) {
-		return fmt.Errorf("silo is not installed. Run 'silo install' first")
+		return fmt.Errorf("silo is not installed, run 'silo up' first")
 	}
 
 	if err := u.backupConfig(); err != nil {
