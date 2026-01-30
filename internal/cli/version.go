@@ -68,10 +68,14 @@ var versionCmd = &cobra.Command{
 		paths := config.NewPaths(configDir)
 		cfg, err := config.Load(paths.ConfigFile)
 		var imageTag string
-		if err == nil {
+		if err != nil {
+			log.Warn("Failed to load config: %v", err)
+		} else {
 			imageTag = cfg.ImageTag
 			imageVersions, err := versionpkg.CheckImageVersions(ctx, cfg.ImageTag)
-			if err == nil {
+			if err != nil {
+				log.Warn("Failed to check Docker image versions: %v", err)
+			} else {
 				for _, img := range imageVersions {
 					output.Images = append(output.Images, ImageOutput{
 						Name:        img.ImageName,
