@@ -29,6 +29,10 @@ const (
 	DefaultInferenceHTTPThreads = 8
 	DefaultInferenceFit         = "off"
 	DefaultInferenceGPUDevices  = `"0", "1", "2"`
+
+	// Service toggles
+	DefaultEnableInferenceEngine = false
+	DefaultEnableProxyAgent      = false
 )
 
 type Config struct {
@@ -53,6 +57,10 @@ type Config struct {
 	InferenceHTTPThreads int    `yaml:"inference_http_threads"`
 	InferenceFit         string `yaml:"inference_fit"`
 	InferenceGPUDevices  string `yaml:"inference_gpu_devices"`
+
+	// Service toggles
+	EnableInferenceEngine bool `yaml:"enable_inference_engine"`
+	EnableProxyAgent      bool `yaml:"enable_proxy_agent"`
 }
 
 type State struct {
@@ -84,6 +92,10 @@ func NewDefaultConfig(paths *Paths) *Config {
 		InferenceHTTPThreads: DefaultInferenceHTTPThreads,
 		InferenceFit:         DefaultInferenceFit,
 		InferenceGPUDevices:  DefaultInferenceGPUDevices,
+
+		// Service toggles
+		EnableInferenceEngine: DefaultEnableInferenceEngine,
+		EnableProxyAgent:      DefaultEnableProxyAgent,
 	}
 }
 
@@ -143,24 +155,26 @@ func Validate(config *Config) error {
 		return fmt.Errorf("default_model cannot be empty")
 	}
 
-	// Inference engine validation
-	if config.InferencePort < 1 || config.InferencePort > 65535 {
-		return fmt.Errorf("inference_port must be between 1 and 65535")
-	}
-	if config.InferenceModelFile == "" {
-		return fmt.Errorf("inference_model_file cannot be empty")
-	}
-	if config.InferenceContextSize < 1 {
-		return fmt.Errorf("inference_context_size must be positive")
-	}
-	if config.InferenceBatchSize < 1 {
-		return fmt.Errorf("inference_batch_size must be positive")
-	}
-	if config.InferenceThreads < 1 {
-		return fmt.Errorf("inference_threads must be positive")
-	}
-	if config.InferenceHTTPThreads < 1 {
-		return fmt.Errorf("inference_http_threads must be positive")
+	// Inference engine validation (only when enabled)
+	if config.EnableInferenceEngine {
+		if config.InferencePort < 1 || config.InferencePort > 65535 {
+			return fmt.Errorf("inference_port must be between 1 and 65535")
+		}
+		if config.InferenceModelFile == "" {
+			return fmt.Errorf("inference_model_file cannot be empty")
+		}
+		if config.InferenceContextSize < 1 {
+			return fmt.Errorf("inference_context_size must be positive")
+		}
+		if config.InferenceBatchSize < 1 {
+			return fmt.Errorf("inference_batch_size must be positive")
+		}
+		if config.InferenceThreads < 1 {
+			return fmt.Errorf("inference_threads must be positive")
+		}
+		if config.InferenceHTTPThreads < 1 {
+			return fmt.Errorf("inference_http_threads must be positive")
+		}
 	}
 
 	return nil
