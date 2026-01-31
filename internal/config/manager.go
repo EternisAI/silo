@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -113,6 +114,70 @@ func Load(path string) (*Config, error) {
 	return &config, nil
 }
 
+// LoadOrDefault loads config from file and fills missing fields with defaults.
+// If the file doesn't exist, returns a new config with all defaults.
+// If the file exists, preserves existing values and only fills in missing/zero fields.
+func LoadOrDefault(path string, paths *Paths) (*Config, error) {
+	existing, err := Load(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return NewDefaultConfig(paths), nil
+		}
+		return nil, err
+	}
+
+	defaults := NewDefaultConfig(paths)
+	merged := mergeConfigs(existing, defaults)
+	merged.ConfigFile = paths.ConfigFile
+	merged.DataDir = paths.AppDataDir
+
+	return merged, nil
+}
+
+// mergeConfigs merges two configs, preferring non-zero values from existing config
+// and filling in zero values with defaults. Uses reflection to handle all fields.
+func mergeConfigs(existing, defaults *Config) *Config {
+	result := &Config{}
+
+	existingVal := reflect.ValueOf(existing).Elem()
+	defaultsVal := reflect.ValueOf(defaults).Elem()
+	resultVal := reflect.ValueOf(result).Elem()
+
+	for i := 0; i < existingVal.NumField(); i++ {
+		existingField := existingVal.Field(i)
+		defaultField := defaultsVal.Field(i)
+		resultField := resultVal.Field(i)
+
+		if !resultField.CanSet() {
+			continue
+		}
+
+		if isZeroValue(existingField) {
+			resultField.Set(defaultField)
+		} else {
+			resultField.Set(existingField)
+		}
+	}
+
+	return result
+}
+
+// isZeroValue checks if a reflect.Value is the zero value for its type
+func isZeroValue(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.String:
+		return v.String() == ""
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	default:
+		return false
+	}
+}
+
 func Save(path string, config *Config) error {
 	data, err := yaml.Marshal(config)
 	if err != nil {
@@ -126,7 +191,8 @@ func Save(path string, config *Config) error {
 	return nil
 }
 
-// UpdateImageTag updates the image_tag field in the config and saves it
+// UpdateImageTag updates the image_tag field in the config and saves it.
+// This function uses LoadOrDefault to ensure any new fields are preserved.
 func UpdateImageTag(cfg *Config, newTag string, configPath string) error {
 	cfg.ImageTag = newTag
 
@@ -240,4 +306,34 @@ func FindUnknownFields(path string) ([]string, error) {
 	}
 
 	return unknown, nil
+}
+
+// FindMissingFields returns a list of field names that are missing from the config file
+// but exist in the Config struct (useful for detecting when defaults will be applied).
+func FindMissingFields(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	// Parse YAML into a map to get all keys
+	var rawConfig map[string]interface{}
+	if err := yaml.Unmarshal(data, &rawConfig); err != nil {
+		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	// Get all known fields from Config struct tags
+	t := reflect.TypeOf(Config{})
+	var missing []string
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		tag := field.Tag.Get("yaml")
+		if tag != "" && tag != "-" {
+			if _, exists := rawConfig[tag]; !exists {
+				missing = append(missing, tag)
+			}
+		}
+	}
+
+	return missing, nil
 }

@@ -70,15 +70,12 @@ This command will:
 		output.Upgrade.StartedAt = startTime.Format(time.RFC3339)
 		output.Success = false
 
-		cfg, err := config.Load(paths.ConfigFile)
+		cfg, err := config.LoadOrDefault(paths.ConfigFile, paths)
 		if err != nil {
 			log.Error("Failed to load config: %v", err)
 			log.Info("Run 'silo up' first")
 			return err
 		}
-
-		cfg.ConfigFile = paths.ConfigFile
-		cfg.DataDir = paths.AppDataDir
 
 		checkCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		versionInfo, err := versionpkg.Check(checkCtx, version)

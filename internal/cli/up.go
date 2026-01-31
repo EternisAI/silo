@@ -57,14 +57,16 @@ This command will:
 			return err
 		}
 
-		cfg, err := config.Load(paths.ConfigFile)
+		cfg, err := config.LoadOrDefault(paths.ConfigFile, paths)
 		if err != nil {
 			log.Error("Failed to load config: %v", err)
 			return err
 		}
 
-		cfg.ConfigFile = paths.ConfigFile
-		cfg.DataDir = paths.AppDataDir
+		// Save merged config back to ensure any new fields are persisted
+		if err := config.Save(paths.ConfigFile, cfg); err != nil {
+			log.Warn("Failed to save merged config: %v", err)
+		}
 
 		log.Info("Regenerating docker-compose.yml from current configuration...")
 		if err := config.GenerateDockerCompose(cfg, paths.ComposeFile); err != nil {

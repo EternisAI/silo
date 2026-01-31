@@ -192,8 +192,8 @@ func (s *Server) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	apiLog := NewAPILogger()
 	apiLog.Info("Starting upgrade process...")
 
-	// Load current config
-	cfg, err := config.Load(s.daemon.paths.ConfigFile)
+	// Load current config with defaults for missing fields
+	cfg, err := config.LoadOrDefault(s.daemon.paths.ConfigFile, s.daemon.paths)
 	if err != nil {
 		apiLog.Error("Failed to load config: %v", err)
 		s.respondWithLogs(w, http.StatusInternalServerError, false, "",
@@ -214,8 +214,8 @@ func (s *Server) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Reload daemon config after upgrade
-	if newCfg, err := config.Load(s.daemon.paths.ConfigFile); err == nil {
+	// Reload daemon config after upgrade with defaults for any new fields
+	if newCfg, err := config.LoadOrDefault(s.daemon.paths.ConfigFile, s.daemon.paths); err == nil {
 		s.daemon.config = newCfg
 	} else {
 		s.daemon.logger.Warn("Failed to reload config after upgrade: %v", err)
@@ -330,8 +330,8 @@ func (s *Server) handleCheck(w http.ResponseWriter, r *http.Request) {
 	apiLog := NewAPILogger()
 	apiLog.Info("Validating configuration...")
 
-	// Load and validate config
-	cfg, err := config.Load(s.daemon.paths.ConfigFile)
+	// Load config with defaults for missing fields (ensures validation includes all required fields)
+	cfg, err := config.LoadOrDefault(s.daemon.paths.ConfigFile, s.daemon.paths)
 	if err != nil {
 		apiLog.Error("Failed to load config: %v", err)
 		s.respondWithLogs(w, http.StatusInternalServerError, false, "",

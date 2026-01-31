@@ -47,6 +47,19 @@ This command will:
 			}
 		}
 
+		// Check for missing fields (will be filled with defaults)
+		missingFields, err := config.FindMissingFields(paths.ConfigFile)
+		if err != nil {
+			log.Error("Failed to check for missing fields: %v", err)
+			return err
+		}
+		if len(missingFields) > 0 {
+			log.Info("Missing fields (will use defaults):")
+			for _, field := range missingFields {
+				log.Info("  - %s", field)
+			}
+		}
+
 		// Validate config values
 		if err := config.Validate(cfg); err != nil {
 			log.Error("Invalid configuration: %v", err)

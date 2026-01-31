@@ -61,27 +61,22 @@ func New() (*Daemon, error) {
 
 	paths := config.NewPaths(configDir, dataDir)
 
-	// Load configuration (create default if not found)
-	cfg, err := config.Load(paths.ConfigFile)
+	// Create config directory if it doesn't exist
+	if err := os.MkdirAll(paths.ConfigDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	// Load configuration with defaults for missing fields
+	cfg, err := config.LoadOrDefault(paths.ConfigFile, paths)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			log.Warn("Config file not found, creating default config...")
-			cfg = config.NewDefaultConfig(paths)
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
 
-			// Create config directory if it doesn't exist
-			if err := os.MkdirAll(paths.ConfigDir, 0755); err != nil {
-				return nil, fmt.Errorf("failed to create config directory: %w", err)
-			}
-
-			// Save default config
-			if err := config.GenerateConfig(cfg, paths.ConfigFile); err != nil {
-				return nil, fmt.Errorf("failed to generate config file: %w", err)
-			}
-
-			log.Success("Created default config at %s", paths.ConfigFile)
-		} else {
-			return nil, fmt.Errorf("failed to load config: %w", err)
-		}
+	// Save merged config to ensure any new fields are persisted
+	if err := config.Save(paths.ConfigFile, cfg); err != nil {
+		log.Warn("Failed to save merged config: %v", err)
+	} else {
+		log.Debug("Config loaded and updated at %s", paths.ConfigFile)
 	}
 
 	// Load state (use default empty state if not found)
