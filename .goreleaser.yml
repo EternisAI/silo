@@ -4,7 +4,8 @@ before:
     - go mod download
 
 builds:
-  - main: ./cmd/silo
+  - id: silo
+    main: ./cmd/silo
     binary: silo
     env:
       - CGO_ENABLED=0
@@ -17,6 +18,21 @@ builds:
       - -X github.com/eternisai/silo/internal/cli.version={{.Version}}
       - -X github.com/eternisai/silo/internal/cli.commit={{.Commit}}
       - -X github.com/eternisai/silo/internal/cli.buildDate={{.Date}}
+  
+  - id: silod
+    main: ./cmd/silod
+    binary: silod
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.buildDate={{.Date}}
 
 archives:
   - format: tar.gz
