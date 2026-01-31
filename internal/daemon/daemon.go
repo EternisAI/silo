@@ -15,22 +15,19 @@ import (
 
 // Daemon represents the background service
 type Daemon struct {
-	config    *config.Config
-	state     *config.State
-	paths     *config.Paths
-	monitor   *Monitor
-	scheduler *Scheduler
-	server    *Server
-	logger    *logger.Logger
-	opLock    sync.Mutex // Prevents concurrent operations
-	wg        sync.WaitGroup
+	config  *config.Config
+	state   *config.State
+	paths   *config.Paths
+	monitor *Monitor
+	server  *Server
+	logger  *logger.Logger
+	opLock  sync.Mutex // Prevents concurrent operations
+	wg      sync.WaitGroup
 }
 
 // Config holds daemon configuration
 type Config struct {
 	MonitorInterval   time.Duration
-	VersionCheckCron  string
-	HealthCheckCron   string
 	AutoRestart       bool
 	ServerEnabled     bool
 	ServerPort        int
@@ -42,8 +39,6 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		MonitorInterval:   30 * time.Second,
-		VersionCheckCron:  "0 2 * * *",  // Daily at 2 AM
-		HealthCheckCron:   "*/5 * * * *", // Every 5 minutes
 		AutoRestart:       true,
 		ServerEnabled:     true,
 		ServerPort:        9999,
@@ -85,12 +80,11 @@ func New() (*Daemon, error) {
 	daemonCfg := DefaultConfig()
 
 	d := &Daemon{
-		config:    cfg,
-		state:     state,
-		paths:     paths,
-		logger:    log,
-		monitor:   NewMonitor(paths, daemonCfg, log),
-		scheduler: NewScheduler(paths, cfg, daemonCfg, log),
+		config:  cfg,
+		state:   state,
+		paths:   paths,
+		logger:  log,
+		monitor: NewMonitor(paths, daemonCfg, log),
 	}
 
 	// Create API server if enabled
@@ -115,13 +109,6 @@ func (d *Daemon) Start(ctx context.Context) error {
 	go func() {
 		defer d.wg.Done()
 		d.monitor.Start(ctx)
-	}()
-
-	// Start scheduler
-	d.wg.Add(1)
-	go func() {
-		defer d.wg.Done()
-		d.scheduler.Start(ctx)
 	}()
 
 	// Start API server if enabled
