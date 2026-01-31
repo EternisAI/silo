@@ -70,15 +70,15 @@ func New() (*Daemon, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Load state
+	// Load state (use default empty state if not found)
 	state, err := config.LoadState(paths.StateFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load state: %w", err)
-	}
-
-	// Check if system is installed
-	if state.InstalledAt == "" {
-		return nil, fmt.Errorf("silo is not installed, run 'silo up' first")
+		if os.IsNotExist(err) {
+			log.Warn("State file not found, using default empty state")
+			state = &config.State{}
+		} else {
+			return nil, fmt.Errorf("failed to load state: %w", err)
+		}
 	}
 
 	// Create daemon components
