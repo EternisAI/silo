@@ -36,7 +36,6 @@ func (s *Server) Start(ctx context.Context) error {
 	// Register existing handlers
 	mux.HandleFunc("/health", s.handleHealth)
 	mux.HandleFunc("/status", s.handleStatus)
-	mux.HandleFunc("/stats", s.handleStats)
 
 	// Register command API handlers
 	mux.HandleFunc("/api/v1/up", s.handleUp)
@@ -102,12 +101,4 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(status)
-}
-
-// handleStats returns monitoring statistics
-func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
-	stats := s.daemon.monitor.GetStats()
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stats)
 }

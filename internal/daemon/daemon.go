@@ -15,20 +15,17 @@ import (
 
 // Daemon represents the background service
 type Daemon struct {
-	config  *config.Config
-	state   *config.State
-	paths   *config.Paths
-	monitor *Monitor
-	server  *Server
-	logger  *logger.Logger
-	opLock  sync.Mutex // Prevents concurrent operations
-	wg      sync.WaitGroup
+	config *config.Config
+	state  *config.State
+	paths  *config.Paths
+	server *Server
+	logger *logger.Logger
+	opLock sync.Mutex // Prevents concurrent operations
+	wg     sync.WaitGroup
 }
 
 // Config holds daemon configuration
 type Config struct {
-	MonitorInterval   time.Duration
-	AutoRestart       bool
 	ServerEnabled     bool
 	ServerPort        int
 	ServerBindAddress string
@@ -38,8 +35,6 @@ type Config struct {
 // DefaultConfig returns default daemon configuration
 func DefaultConfig() *Config {
 	return &Config{
-		MonitorInterval:   30 * time.Second,
-		AutoRestart:       true,
 		ServerEnabled:     true,
 		ServerPort:        9999,
 		ServerBindAddress: "0.0.0.0", // Allow access from host and Docker containers
@@ -80,11 +75,10 @@ func New() (*Daemon, error) {
 	daemonCfg := DefaultConfig()
 
 	d := &Daemon{
-		config:  cfg,
-		state:   state,
-		paths:   paths,
-		logger:  log,
-		monitor: NewMonitor(paths, daemonCfg, log),
+		config: cfg,
+		state:  state,
+		paths:  paths,
+		logger: log,
 	}
 
 	// Create API server if enabled
@@ -106,13 +100,6 @@ func (d *Daemon) Start(ctx context.Context) error {
 
 	// Error channel for critical failures
 	errChan := make(chan error, 1)
-
-	// Start monitor
-	d.wg.Add(1)
-	go func() {
-		defer d.wg.Done()
-		d.monitor.Start(ctx)
-	}()
 
 	// Start API server if enabled
 	if d.server != nil {
@@ -186,7 +173,6 @@ func (d *Daemon) GetStatus() (*Status, error) {
 		Containers:    containers,
 		CLIVersion:    cliVer,
 		ImageVersions: imageVers,
-		MonitorStats:  d.monitor.GetStats(),
 	}, nil
 }
 
@@ -197,5 +183,4 @@ type Status struct {
 	Containers    []docker.Container
 	CLIVersion    *version.VersionInfo
 	ImageVersions []version.ImageVersionInfo
-	MonitorStats  *MonitorStats
 }
