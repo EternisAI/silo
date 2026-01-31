@@ -91,11 +91,15 @@ main() {
   # Show daemon installation instructions if daemon was installed
   if [ -f "$INSTALL_DIR/$DAEMON_BINARY" ]; then
     echo ""
-    echo "To install silod as a systemd service (optional):"
-    echo "  curl -fsSL https://raw.githubusercontent.com/$REPO/main/scripts/install-service.sh | bash"
+    echo "To run silod daemon as a systemd service:"
+    echo "  1. Install service:"
+    echo "       curl -fsSL https://raw.githubusercontent.com/$REPO/main/scripts/install-service.sh | bash"
+    echo "  2. Enable and start:"
+    echo "       sudo systemctl enable silod"
+    echo "       sudo systemctl start silod"
     echo ""
-    echo "Or if you have the repo locally:"
-    echo "  cd /path/to/silo && sudo make install-service"
+    echo "Or run silod manually (foreground):"
+    echo "  $INSTALL_DIR/$DAEMON_BINARY"
   fi
 }
 
