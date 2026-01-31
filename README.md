@@ -102,38 +102,26 @@ silo version --json        # JSON output
 
 ## Daemon (Remote Control)
 
-Run a background service with HTTP API for remote management over LAN:
+HTTP API for remote management over LAN:
 
 ```bash
-# Build and start daemon
 make build-daemon
-./bin/silod                                    # localhost only (default)
-SILO_DAEMON_BIND_ADDRESS=0.0.0.0 ./bin/silod  # enable LAN access
+./bin/silod                                    # localhost only
+SILO_DAEMON_BIND_ADDRESS=0.0.0.0 ./bin/silod  # LAN access
 ```
 
 ### API Endpoints
 
 ```bash
-# Check version
-curl http://localhost:9999/api/v1/version | jq
-
-# Start/install Silo
-curl -X POST http://localhost:9999/api/v1/up
-
-# Stop Silo
-curl -X POST http://localhost:9999/api/v1/down
-
-# Restart service
+curl http://localhost:9999/health                                      # Health check
+curl http://localhost:9999/status | jq                                 # Container status
+curl http://localhost:9999/api/v1/version | jq                         # Version info
+curl -X POST http://localhost:9999/api/v1/up                           # Start/install
+curl -X POST http://localhost:9999/api/v1/down                         # Stop
 curl -X POST http://localhost:9999/api/v1/restart -d '{"service":"backend"}'
-
-# Upgrade to latest
-curl -X POST http://localhost:9999/api/v1/upgrade
-
-# Get logs
+curl -X POST http://localhost:9999/api/v1/upgrade                      # Upgrade
 curl "http://localhost:9999/api/v1/logs?service=backend&lines=50"
-
-# Validate config
-curl http://localhost:9999/api/v1/check | jq
+curl http://localhost:9999/api/v1/check | jq                           # Validate config
 ```
 
 ## Configuration
