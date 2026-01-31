@@ -63,7 +63,7 @@ This command will:
   - Preserve all data`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		paths := config.NewPaths(configDir)
+		paths := config.NewPaths(configDir, "")
 
 		startTime := time.Now()
 		var output UpgradeOutput

@@ -16,7 +16,7 @@ var statusCmd = &cobra.Command{
 	Long:  "Display the status of Silo containers, versions, and health information.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		paths := config.NewPaths(configDir)
+		paths := config.NewPaths(configDir, "")
 
 		if _, err := os.Stat(paths.ComposeFile); os.IsNotExist(err) {
 			log.Warn("Silo is not installed")

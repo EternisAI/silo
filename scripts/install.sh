@@ -92,9 +92,10 @@ main() {
   if [ -f "$INSTALL_DIR/$DAEMON_BINARY" ]; then
     echo ""
     echo "To install silod as a systemd service (optional):"
-    echo "  sudo make install-service"
-    echo "  sudo systemctl enable silod"
-    echo "  sudo systemctl start silod"
+    echo "  curl -fsSL https://raw.githubusercontent.com/$REPO/main/scripts/install-service.sh | bash"
+    echo ""
+    echo "Or if you have the repo locally:"
+    echo "  cd /path/to/silo && sudo make install-service"
   fi
 }
 

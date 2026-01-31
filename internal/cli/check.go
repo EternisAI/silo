@@ -17,7 +17,7 @@ This command will:
   - Validate all configuration values
   - Check if installation files exist (docker-compose.yml, state.json)`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		paths := config.NewPaths(configDir)
+		paths := config.NewPaths(configDir, "")
 
 		// Check config file exists
 		if _, err := os.Stat(paths.ConfigFile); os.IsNotExist(err) {

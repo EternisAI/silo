@@ -1,3 +1,9 @@
+# This is a template file. Placeholders will be replaced during installation:
+#   __USER__        - Username to run the service as
+#   __GROUP__       - Group to run the service as
+#   __HOME__        - Home directory of the user
+#   __SILOD_PATH__  - Full path to silod binary
+
 [Unit]
 Description=Silo Daemon - Background service for Silo Box monitoring
 After=docker.service
@@ -5,15 +11,17 @@ Requires=docker.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/silod
+User=__USER__
+Group=__GROUP__
+ExecStart=__SILOD_PATH__
 Restart=on-failure
 RestartSec=5s
 StandardOutput=journal
 StandardError=journal
 
 # Environment
-Environment="SILO_CONFIG_DIR=/root/.config/silo"
-Environment="SILO_STATE_DIR=/root/.local/share/silo"
+Environment="SILO_CONFIG_DIR=__HOME__/.config/silo"
+Environment="SILO_DATA_DIR=__HOME__/.local/share/silo"
 
 # Security
 NoNewPrivileges=true

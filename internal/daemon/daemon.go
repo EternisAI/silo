@@ -52,7 +52,13 @@ func New() (*Daemon, error) {
 		configDir = config.DefaultConfigDir()
 	}
 
-	paths := config.NewPaths(configDir)
+	// Determine data directory
+	dataDir := os.Getenv("SILO_DATA_DIR")
+	if dataDir == "" {
+		dataDir = config.DefaultDataDir()
+	}
+
+	paths := config.NewPaths(configDir, dataDir)
 
 	// Load configuration
 	cfg, err := config.Load(paths.ConfigFile)

@@ -65,7 +65,7 @@ var versionCmd = &cobra.Command{
 			output.Latest = versionInfo
 		}
 
-		paths := config.NewPaths(configDir)
+		paths := config.NewPaths(configDir, "")
 		cfg, err := config.Load(paths.ConfigFile)
 		var imageTag string
 		if err != nil {

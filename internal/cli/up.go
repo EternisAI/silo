@@ -20,7 +20,7 @@ This command will:
   - Subsequent runs: start existing containers`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		paths := config.NewPaths(configDir)
+		paths := config.NewPaths(configDir, "")
 
 		if _, err := os.Stat(paths.ComposeFile); os.IsNotExist(err) {
 			log.Info("First run detected, installing Silo...")

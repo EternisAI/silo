@@ -28,7 +28,7 @@ func init() {
 }
 
 func runLogs(cmd *cobra.Command, args []string) error {
-	paths := config.NewPaths(configDir)
+	paths := config.NewPaths(configDir, "")
 
 	if _, err := os.Stat(paths.ComposeFile); os.IsNotExist(err) {
 		log.Error("Silo is not installed")

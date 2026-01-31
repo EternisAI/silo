@@ -36,12 +36,14 @@ func DefaultDataDir() string {
 	return filepath.Join(home, ".local", "share", "silo")
 }
 
-func NewPaths(configDir string) *Paths {
+func NewPaths(configDir, dataDir string) *Paths {
 	if configDir == "" {
 		configDir = DefaultConfigDir()
 	}
 
-	dataDir := DefaultDataDir()
+	if dataDir == "" {
+		dataDir = DefaultDataDir()
+	}
 
 	return &Paths{
 		ConfigDir:   configDir,
