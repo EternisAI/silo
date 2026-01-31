@@ -16,7 +16,7 @@ type APILogger struct {
 // NewAPILogger creates a new API logger
 func NewAPILogger() *APILogger {
 	return &APILogger{
-		entries: make([]LogEntry, 0),
+		entries: make([]LogEntry, 0, 1000),
 		maxSize: 1000,
 	}
 }

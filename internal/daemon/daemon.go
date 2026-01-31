@@ -104,6 +104,9 @@ func New() (*Daemon, error) {
 func (d *Daemon) Start(ctx context.Context) error {
 	d.logger.Info("Starting daemon services...")
 
+	// Error channel for critical failures
+	errChan := make(chan error, 1)
+
 	// Start monitor
 	d.wg.Add(1)
 	go func() {
@@ -118,16 +121,23 @@ func (d *Daemon) Start(ctx context.Context) error {
 			defer d.wg.Done()
 			if err := d.server.Start(ctx); err != nil {
 				d.logger.Error("Server error: %v", err)
+				select {
+				case errChan <- err:
+				default:
+				}
 			}
 		}()
 	}
 
 	d.logger.Success("Daemon started successfully")
 
-	// Wait for context cancellation
-	<-ctx.Done()
-
-	return nil
+	// Wait for context cancellation or critical error
+	select {
+	case <-ctx.Done():
+		return nil
+	case err := <-errChan:
+		return err
+	}
 }
 
 // Stop gracefully stops the daemon

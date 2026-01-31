@@ -17,6 +17,17 @@ import (
 	"github.com/eternisai/silo/pkg/logger"
 )
 
+const (
+	// API operation timeouts
+	UpTimeout      = 10 * time.Minute
+	DownTimeout    = 5 * time.Minute
+	RestartTimeout = 5 * time.Minute
+	UpgradeTimeout = 10 * time.Minute
+	LogsTimeout    = 30 * time.Second
+	VersionTimeout = 10 * time.Second
+	MaxLogLines    = 10000
+)
+
 // handleUp handles POST /api/v1/up - start/install Silo
 func (s *Server) handleUp(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -37,7 +48,6 @@ func (s *Server) handleUp(w http.ResponseWriter, r *http.Request) {
 
 	// Create API logger
 	apiLog := NewAPILogger()
-	ctx := context.Background()
 
 	// Check if already installed
 	_, err := os.Stat(s.daemon.paths.ComposeFile)
@@ -45,7 +55,7 @@ func (s *Server) handleUp(w http.ResponseWriter, r *http.Request) {
 		// Already installed, just start containers
 		apiLog.Info("Starting containers...")
 
-		ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+		ctx, cancel := context.WithTimeout(r.Context(), UpTimeout)
 		defer cancel()
 
 		if err := docker.Up(ctx, s.daemon.paths.ComposeFile); err != nil {
@@ -84,7 +94,7 @@ func (s *Server) handleUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Run installer (using daemon logger for actual installation)
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	ctx, cancel := context.WithTimeout(r.Context(), UpTimeout)
 	defer cancel()
 
 	// Use a quiet logger to avoid outputting to terminal
@@ -115,7 +125,7 @@ func (s *Server) handleDown(w http.ResponseWriter, r *http.Request) {
 	apiLog := NewAPILogger()
 	apiLog.Info("Stopping containers...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(r.Context(), DownTimeout)
 	defer cancel()
 
 	if err := docker.Down(ctx, s.daemon.paths.ComposeFile, false); err != nil {
@@ -154,7 +164,7 @@ func (s *Server) handleRestart(w http.ResponseWriter, r *http.Request) {
 		apiLog.Info("Restarting all services")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(r.Context(), RestartTimeout)
 	defer cancel()
 
 	if err := docker.Restart(ctx, s.daemon.paths.ComposeFile, req.Service); err != nil {
@@ -192,7 +202,7 @@ func (s *Server) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Run updater (using daemon logger for actual update)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(r.Context(), UpgradeTimeout)
 	defer cancel()
 
 	quietLog := logger.New(true)
@@ -202,6 +212,13 @@ func (s *Server) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 		s.respondWithLogs(w, http.StatusInternalServerError, false, "",
 			fmt.Sprintf("Upgrade failed: %v", err), "", apiLog.GetLogs())
 		return
+	}
+
+	// Reload daemon config after upgrade
+	if newCfg, err := config.Load(s.daemon.paths.ConfigFile); err == nil {
+		s.daemon.config = newCfg
+	} else {
+		s.daemon.logger.Warn("Failed to reload config after upgrade: %v", err)
 	}
 
 	apiLog.Success("Upgrade completed successfully")
@@ -222,14 +239,18 @@ func (s *Server) handleLogs(w http.ResponseWriter, r *http.Request) {
 	lines := 100 // default
 	if linesStr != "" {
 		if n, err := strconv.Atoi(linesStr); err == nil && n > 0 {
-			lines = n
+			if n > MaxLogLines {
+				lines = MaxLogLines
+			} else {
+				lines = n
+			}
 		}
 	}
 
 	apiLog := NewAPILogger()
 	apiLog.Info("Fetching logs (service=%s, lines=%d)", service, lines)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), LogsTimeout)
 	defer cancel()
 
 	opts := docker.LogOptions{
@@ -267,7 +288,7 @@ func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), VersionTimeout)
 	defer cancel()
 
 	// Check CLI version

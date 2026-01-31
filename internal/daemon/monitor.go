@@ -60,20 +60,21 @@ func (m *Monitor) Start(ctx context.Context) {
 
 // check performs a health check on all containers
 func (m *Monitor) check() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.stats.LastCheck = time.Now()
-	m.stats.CheckCount++
-
 	ctx := context.Background()
 	containers, err := docker.Ps(ctx, m.paths.ComposeFile)
 	if err != nil {
 		m.logger.Error("Failed to check container status: %v", err)
-		m.stats.FailedChecks++
+		m.recordFailedCheck()
 		return
 	}
 
+	// Update stats with lock
+	m.mu.Lock()
+	m.stats.LastCheck = time.Now()
+	m.stats.CheckCount++
+
+	// Track state changes and containers needing restart
+	var needsRestart []string
 	for _, container := range containers {
 		previousState := m.stats.ContainerState[container.Service]
 		m.stats.ContainerState[container.Service] = container.State
@@ -85,15 +86,35 @@ func (m *Monitor) check() {
 
 		// Auto-restart exited containers if enabled
 		if m.config.AutoRestart && container.State == "exited" {
-			m.logger.Warn("Container %s is exited, attempting restart...", container.Service)
-			if err := m.restartContainer(container.Service); err != nil {
-				m.logger.Error("Failed to restart %s: %v", container.Service, err)
-			} else {
-				m.stats.RestartCount++
-				m.logger.Success("Successfully restarted %s", container.Service)
-			}
+			needsRestart = append(needsRestart, container.Service)
 		}
 	}
+	m.mu.Unlock()
+
+	// Restart containers outside of lock
+	for _, service := range needsRestart {
+		m.logger.Warn("Container %s is exited, attempting restart...", service)
+		if err := m.restartContainer(service); err != nil {
+			m.logger.Error("Failed to restart %s: %v", service, err)
+		} else {
+			m.incrementRestartCount()
+			m.logger.Success("Successfully restarted %s", service)
+		}
+	}
+}
+
+// recordFailedCheck increments the failed check counter
+func (m *Monitor) recordFailedCheck() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.stats.FailedChecks++
+}
+
+// incrementRestartCount increments the restart counter
+func (m *Monitor) incrementRestartCount() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.stats.RestartCount++
 }
 
 // restartContainer restarts a specific container
