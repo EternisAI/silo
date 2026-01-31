@@ -5,6 +5,7 @@ REPO="EternisAI/silo"
 INSTALL_DIR="$HOME/.local/bin"
 CLI_BINARY="silo"
 DAEMON_BINARY="silod"
+SERVICE_NAME="silod.service"
 
 get_latest_release() {
   curl --silent "https://api.github.com/repos/$REPO/releases/latest" |
@@ -32,6 +33,63 @@ check_dependencies() {
     echo "Error: docker-compose is not installed"
     exit 1
   fi
+}
+
+install_systemd_service() {
+  local silod_path="$INSTALL_DIR/$DAEMON_BINARY"
+  
+  if [ ! -f "$silod_path" ]; then
+    echo "Error: $DAEMON_BINARY not found at $silod_path"
+    exit 1
+  fi
+  
+  echo ""
+  echo "Installing Silo Daemon systemd service..."
+  
+  # Check if service is already running and stop it
+  if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
+    echo "Stopping existing $SERVICE_NAME..."
+    sudo systemctl stop "$SERVICE_NAME"
+  fi
+  
+  local current_user=$(whoami)
+  local current_group=$(id -gn)
+  
+  echo "Service will run as user: $current_user"
+  echo "Home directory: $HOME"
+  echo "Binary path: $silod_path"
+  
+  local tmp_service_dir=$(mktemp -d)
+  trap "rm -rf $tmp_service_dir" EXIT
+  
+  local service_url="https://raw.githubusercontent.com/$REPO/main/scripts/silod.service"
+  echo "Downloading service template..."
+  curl -fsSL "$service_url" -o "$tmp_service_dir/$SERVICE_NAME"
+  
+  echo "Configuring service..."
+  sed -e "s|__USER__|$current_user|g" \
+      -e "s|__GROUP__|$current_group|g" \
+      -e "s|__HOME__|$HOME|g" \
+      -e "s|__SILOD_PATH__|$silod_path|g" \
+      "$tmp_service_dir/$SERVICE_NAME" > "$tmp_service_dir/${SERVICE_NAME}.configured"
+  
+  echo "Installing service to /etc/systemd/system/$SERVICE_NAME..."
+  sudo cp "$tmp_service_dir/${SERVICE_NAME}.configured" "/etc/systemd/system/$SERVICE_NAME"
+  sudo systemctl daemon-reload
+  
+  # Enable and start the service
+  echo "Enabling and starting service..."
+  sudo systemctl enable "$SERVICE_NAME"
+  sudo systemctl start "$SERVICE_NAME"
+  
+  echo ""
+  echo "✓ Silo Daemon service installed and started successfully"
+  echo ""
+  echo "Service management commands:"
+  echo "  Check status:  sudo systemctl status $SERVICE_NAME"
+  echo "  View logs:     sudo journalctl -u $SERVICE_NAME -f"
+  echo "  Restart:       sudo systemctl restart $SERVICE_NAME"
+  echo "  Stop:          sudo systemctl stop $SERVICE_NAME"
 }
 
 main() {
@@ -88,18 +146,9 @@ main() {
   echo ""
   echo "Run 'silo --help' to get started"
   
-  # Show daemon installation instructions if daemon was installed
+  # Install systemd service if daemon was installed
   if [ -f "$INSTALL_DIR/$DAEMON_BINARY" ]; then
-    echo ""
-    echo "To run silod daemon as a systemd service:"
-    echo "  1. Install service:"
-    echo "       curl -fsSL https://raw.githubusercontent.com/$REPO/main/scripts/install-service.sh | bash"
-    echo "  2. Enable and start:"
-    echo "       sudo systemctl enable silod"
-    echo "       sudo systemctl start silod"
-    echo ""
-    echo "Or run silod manually (foreground):"
-    echo "  $INSTALL_DIR/$DAEMON_BINARY"
+    install_systemd_service
   fi
 }
 
