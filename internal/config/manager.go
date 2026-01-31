@@ -14,8 +14,8 @@ const (
 	DefaultVersion    = "0.1.5"
 	DefaultImageTag   = "0.1.7"
 	DefaultPort       = 80
-	DefaultLLMBaseURL = "http://inference-engine:30000/v1"
-	DefaultModel      = "GLM-4.7-Q4_K_M.gguf"
+	DefaultLLMBaseURL = "htpp://host.docker.internal:30000/v1"
+	DefaultModel      = "glm47-awq"
 
 	// Inference engine defaults
 	DefaultInferencePort        = 30000
