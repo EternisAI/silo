@@ -16,34 +16,28 @@ make dev ARGS="up"  # Run without building (go run)
 
 ## Architecture Overview
 
-This is a Cobra-based CLI that orchestrates Docker Compose operations. It's stateful, tracking installation metadata in `~/.local/share/silo/state.json`.
+Two binaries: **silo** (CLI) and **silod** (daemon). CLI orchestrates Docker Compose operations. Daemon provides background service and HTTP API. Both share config/state from `~/.config/silo/` and `~/.local/share/silo/`.
 
 ```
-┌─────────────────────────────────────────┐
-│         CLI Entry Point (main.go)       │
-└──────────────────┬──────────────────────┘
-                   │
-          ┌────────▼─────────┐
-          │   Cobra Router   │
-          │   (root.go)      │
-          └────┬────┬────┬───┴─┬─────┬────┐
-               │    │    │     │     │    │
-        ┌──────▼────▼─┬──▼──┬──▼─┬───▼────▼──────┐
-        │ up  │ down  │status│logs│upgrade │check │ version
-        └──┬──┴─┬─────┴──┬───┴──┬┴────┬────┴─────┘
-           │    │       │      │     │
-      ┌────▼────▼───┬───▼──┬───▼─┬───▼────────┐
-      │ Installer   │Docker│Config│Updater│Logger│
-      │             │      │      │ Version    │
-      └─────────────┴──────┴──────┴────────────┘
+CLI (cmd/silo)                     Daemon (cmd/silod)
+┌──────────────┐                   ┌──────────────┐
+│ Cobra Router │                   │ HTTP Server  │
+│   Commands   │                   │  (port 9999) │
+└──────┬───────┘                   └──────┬───────┘
+       │                                  │
+       ├─ up/down/status/logs            ├─ /health
+       ├─ upgrade/check/version          ├─ /status
+       │                                  ├─ /api/v1/up
+       └─ Installer/Docker/Updater       └─ /api/v1/down...
 ```
 
 ## Project Structure
 
 ```
 silo/
-├── cmd/silo/
-│   └── main.go              # Entry point (calls cli.Execute())
+├── cmd/
+│   ├── silo/main.go         # CLI entry point
+│   └── silod/main.go        # Daemon entry point
 │
 ├── internal/
 │   ├── assets/
@@ -58,6 +52,11 @@ silo/
 │   │   ├── upgrade.go       # Pull latest images and recreate
 │   │   ├── check.go         # Validate config + installation
 │   │   └── version.go       # Show versions + check for updates
+│   │
+│   ├── daemon/
+│   │   ├── daemon.go        # Daemon lifecycle and configuration
+│   │   ├── server.go        # HTTP API server
+│   │   └── handlers.go      # API endpoint handlers
 │   │
 │   ├── config/
 │   │   ├── manager.go       # Config/State structs, Load/Save, validation
@@ -83,7 +82,9 @@ silo/
 │       └── logger.go        # Colored structured logging (Info, Success, Warn, Error)
 │
 └── scripts/
-    ├── install.sh           # Remote installation script
+    ├── install.sh           # Remote installation script (CLI + daemon)
+    ├── install-service.sh   # Systemd service installer
+    ├── silod.service        # Systemd service template
     └── build.sh             # Build automation
 ```
 
@@ -136,8 +137,9 @@ type State struct {
 ```
 
 **Path Management** (`paths.go`):
-- Config dir: `~/.config/silo/`
-- Data dir: `~/.local/share/silo/`
+- Config dir: `~/.config/silo/` (contains config.yml)
+- Data dir: `~/.local/share/silo/` (contains docker-compose.yml, state.json, data/)
+- Environment variables: `SILO_CONFIG_DIR`, `SILO_DATA_DIR` (daemon only)
 - Auto-creates directories with 0755 permissions
 
 ### 3. Docker Integration (`internal/docker/`)
@@ -244,22 +246,23 @@ inference_gpu_devices: "\"0\", \"1\", \"2\""  # Quoted CSV for YAML
 ## Development Workflow
 
 ```bash
-# Local development
-make dev ARGS="up"                     # Run without building
-make dev ARGS="status"                 # Test status command
+# Build
+make build                             # Build CLI to bin/silo
+make build-daemon                      # Build daemon to bin/silod
+make build-all                         # Build both
 
-# Build and test
-make build                             # Build to bin/silo
-make test                              # Run unit tests
-make fmt                               # Format code (gofmt)
+# Install locally
+make install-daemon                    # Install silod to ~/.local/bin
+make install-service                   # Install systemd service (templates with your user)
+
+# Local development (no build)
+make dev ARGS="up"                     # Run CLI
+make dev-daemon                        # Run daemon
+
+# Testing
+make test                              # Run tests
+make fmt                               # Format code
 make lint                              # Run golangci-lint
-
-# Manual testing
-./bin/silo up --port 8080
-./bin/silo status
-./bin/silo logs -f backend
-./bin/silo upgrade
-./bin/silo down
 ```
 
 ## Testing Strategy
@@ -282,6 +285,7 @@ make lint                              # Run golangci-lint
 - [ ] Config validation (`silo check`)
 - [ ] Log viewing (`silo logs`)
 - [ ] Version checking (`silo version`)
+- [ ] Daemon service installation and startup
 
 ## Dependencies
 
@@ -289,6 +293,46 @@ make lint                              # Run golangci-lint
 - **gopkg.in/yaml.v3**: YAML parsing
 - **fatih/color**: Terminal colors
 - **Go 1.25.0+**: Required Go version
+
+## Installation & Deployment
+
+### Remote Installation (End Users)
+
+```bash
+# Install CLI + daemon
+curl -fsSL https://raw.githubusercontent.com/EternisAI/silo/main/scripts/install.sh | bash
+
+# Install systemd service (optional)
+curl -fsSL https://raw.githubusercontent.com/EternisAI/silo/main/scripts/install-service.sh | bash
+sudo systemctl enable silod
+sudo systemctl start silod
+```
+
+**Installation Details:**
+- Binaries installed to: `~/.local/bin/silo` and `~/.local/bin/silod`
+- Config directory: `~/.config/silo/`
+- Data directory: `~/.local/share/silo/`
+- Service runs as installing user (not root)
+- Service file auto-configured during installation
+
+### Daemon (silod)
+
+**HTTP API** (port 9999):
+- `/health` - Health check
+- `/status` - Detailed daemon status
+- `/api/v1/up`, `/api/v1/down`, `/api/v1/restart` - Container control
+- `/api/v1/upgrade`, `/api/v1/logs`, `/api/v1/version`, `/api/v1/check` - Operations
+
+**Environment Variables:**
+- `SILO_CONFIG_DIR` - Override config directory (default: `~/.config/silo`)
+- `SILO_DATA_DIR` - Override data directory (default: `~/.local/share/silo`)
+
+**Service Management:**
+```bash
+sudo systemctl status silod   # Check status
+sudo journalctl -u silod -f   # View logs
+sudo systemctl restart silod  # Restart
+```
 
 ## Common Tasks
 
