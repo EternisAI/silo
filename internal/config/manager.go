@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DefaultVersion    = "0.1.4"
+	DefaultVersion    = "0.1.5"
 	DefaultImageTag   = "0.1.7"
 	DefaultPort       = 80
 	DefaultLLMBaseURL = "http://inference-engine:30000/v1"
