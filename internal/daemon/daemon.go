@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -60,16 +61,33 @@ func New() (*Daemon, error) {
 
 	paths := config.NewPaths(configDir, dataDir)
 
-	// Load configuration
+	// Load configuration (create default if not found)
 	cfg, err := config.Load(paths.ConfigFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
+		if errors.Is(err, os.ErrNotExist) {
+			log.Warn("Config file not found, creating default config...")
+			cfg = config.NewDefaultConfig(paths)
+
+			// Create config directory if it doesn't exist
+			if err := os.MkdirAll(paths.ConfigDir, 0755); err != nil {
+				return nil, fmt.Errorf("failed to create config directory: %w", err)
+			}
+
+			// Save default config
+			if err := config.GenerateConfig(cfg, paths.ConfigFile); err != nil {
+				return nil, fmt.Errorf("failed to generate config file: %w", err)
+			}
+
+			log.Success("Created default config at %s", paths.ConfigFile)
+		} else {
+			return nil, fmt.Errorf("failed to load config: %w", err)
+		}
 	}
 
 	// Load state (use default empty state if not found)
 	state, err := config.LoadState(paths.StateFile)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, os.ErrNotExist) {
 			log.Warn("State file not found, using default empty state")
 			state = &config.State{}
 		} else {
