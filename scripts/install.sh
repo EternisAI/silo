@@ -3,7 +3,8 @@ set -e
 
 REPO="EternisAI/silo"
 INSTALL_DIR="$HOME/.local/bin"
-BINARY_NAME="silo"
+CLI_BINARY="silo"
+DAEMON_BINARY="silod"
 
 get_latest_release() {
   curl --silent "https://api.github.com/repos/$REPO/releases/latest" |
@@ -41,7 +42,7 @@ main() {
 
   check_dependencies
 
-  echo "Installing Silo CLI..."
+  echo "Installing Silo CLI and Daemon..."
 
   VERSION=${1:-$(get_latest_release)}
   ARCH=$(detect_arch)
@@ -54,13 +55,29 @@ main() {
   TMP_DIR=$(mktemp -d)
   trap "rm -rf $TMP_DIR" EXIT
 
+  echo "Downloading binaries..."
   curl -L "$DOWNLOAD_URL" | tar -xz -C "$TMP_DIR"
 
   mkdir -p "$INSTALL_DIR"
-  mv "$TMP_DIR/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
-  chmod +x "$INSTALL_DIR/$BINARY_NAME"
+  
+  # Install CLI binary
+  if [ -f "$TMP_DIR/$CLI_BINARY" ]; then
+    mv "$TMP_DIR/$CLI_BINARY" "$INSTALL_DIR/$CLI_BINARY"
+    chmod +x "$INSTALL_DIR/$CLI_BINARY"
+    echo "✓ Silo CLI installed to $INSTALL_DIR/$CLI_BINARY"
+  else
+    echo "Error: $CLI_BINARY binary not found in release archive"
+    exit 1
+  fi
 
-  echo "✓ Silo CLI installed to $INSTALL_DIR/$BINARY_NAME"
+  # Install daemon binary
+  if [ -f "$TMP_DIR/$DAEMON_BINARY" ]; then
+    mv "$TMP_DIR/$DAEMON_BINARY" "$INSTALL_DIR/$DAEMON_BINARY"
+    chmod +x "$INSTALL_DIR/$DAEMON_BINARY"
+    echo "✓ Silo Daemon installed to $INSTALL_DIR/$DAEMON_BINARY"
+  else
+    echo "Warning: $DAEMON_BINARY binary not found in release archive (skipping daemon installation)"
+  fi
 
   if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     echo ""
@@ -70,6 +87,15 @@ main() {
 
   echo ""
   echo "Run 'silo --help' to get started"
+  
+  # Show daemon installation instructions if daemon was installed
+  if [ -f "$INSTALL_DIR/$DAEMON_BINARY" ]; then
+    echo ""
+    echo "To install silod as a systemd service (optional):"
+    echo "  sudo make install-service"
+    echo "  sudo systemctl enable silod"
+    echo "  sudo systemctl start silod"
+  fi
 }
 
 main "$@"
