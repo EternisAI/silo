@@ -5,7 +5,7 @@
 Silo consists of two complementary binaries:
 
 1. **`silo`** - CLI tool for on-demand container management
-2. **`silod`** - Background daemon for continuous monitoring
+2. **`silod`** - Background daemon for remote management API
 
 Both share internal packages while serving different purposes.
 
@@ -20,11 +20,11 @@ Both share internal packages while serving different purposes.
 │  │   silo CLI  │                        │  silod      │         │
 │  │             │                        │  (daemon)   │         │
 │  │  - up       │                        │             │         │
-│  │  - down     │                        │  - monitor  │         │
-│  │  - status   │                        │  - schedule │         │
-│  │  - logs     │                        │  - api      │         │
+│  │  - down     │                        │  - HTTP API │         │
+│  │  - status   │                        │             │         │
+│  │  - logs     │                        │             │         │
 │  │  - upgrade  │                        │             │         │
-│  │  - check    │◄──────── API ─────────►│  :9999     │         │
+│  │  - check    │◄──────── API ─────────►│  :9999      │         │
 │  │  - version  │      (optional)        │             │         │
 │  └──────┬──────┘                        └──────┬──────┘         │
 │         │                                      │                 │
@@ -90,20 +90,18 @@ Both share internal packages while serving different purposes.
 
 ### Daemon (`cmd/silod/`)
 
-**Purpose**: Continuous background monitoring
+**Purpose**: Remote management API
 
 **Components**:
-- **Monitor** - Container health checks (30s intervals)
-- **Scheduler** - Periodic tasks (version checks, health)
 - **Server** - HTTP API (port 9999)
 
 **Lifecycle**: Long-running process (always on)
 
 **Use cases**:
-- Auto-restart failed containers
-- Scheduled version checks
-- Health monitoring
-- Status API for tooling
+- Remote container management (up, down, restart)
+- Remote upgrades
+- Configuration validation via API
+- Status API for external tooling
 
 ## Package Structure
 
@@ -173,25 +171,18 @@ User: silo up
     └─► Save State (installed_at)
 ```
 
-### Monitoring Flow (Daemon)
+### API Flow (Daemon)
 
 ```
 silod start
     │
     ├─► Load Config & State
     │
-    ├─► Start Monitor (goroutine)
-    │   └─► Every 30s:
-    │       ├─► docker compose ps
-    │       ├─► Check container states
-    │       └─► Auto-restart if exited
-    │
-    ├─► Start Scheduler (goroutine)
-    │   ├─► Daily: Check versions
-    │   └─► Every 5m: Health check
-    │
     └─► Start API Server (goroutine)
         └─► HTTP endpoints on :9999
+            ├─► /health
+            ├─► /status
+            └─► /api/v1/* (up, down, restart, etc.)
 ```
 
 ### Upgrade Flow (CLI)
@@ -249,18 +240,11 @@ Currently, both read the same files independently. Future enhancement: CLI queri
 
 ```
 main()
-  ├─► Monitor (goroutine)
-  │     └─► ticker → check containers
-  │
-  ├─► Scheduler (goroutine)
-  │     ├─► ticker → version check
-  │     └─► ticker → health check
-  │
   └─► API Server (goroutine)
         └─► http.ListenAndServe
 
-All goroutines:
-  - Share context.Context
+Server:
+  - Shares context.Context
   - Cancel on SIGINT/SIGTERM
   - Use sync.WaitGroup for graceful shutdown
 ```
@@ -365,8 +349,8 @@ make test           # Run tests
 
 ### Daemon Tests
 - Mock Docker operations
-- Test monitoring logic
-- Verify scheduler timing
+- Test API handlers
+- Verify server lifecycle
 
 ## Deployment
 
@@ -391,7 +375,7 @@ sudo systemctl start silod
 | **Type** | Command-line tool | Background service |
 | **Lifecycle** | Short-lived | Long-running |
 | **Framework** | Cobra | Standard Go HTTP |
-| **Purpose** | User operations | Automated monitoring |
+| **Purpose** | User operations | Remote management API |
 | **Config** | Shared (`~/.config/silo/`) | Shared (`~/.config/silo/`) |
 | **State** | Shared (`~/.local/share/silo/state.json`) | Shared |
 | **Packages** | `internal/cli/`, shared | `internal/daemon/`, shared |
@@ -400,7 +384,7 @@ sudo systemctl start silod
 
 ## Design Philosophy
 
-1. **Separation of Concerns**: CLI for user operations, daemon for automation
+1. **Separation of Concerns**: CLI for user operations, daemon for remote management
 2. **Shared Infrastructure**: Reuse internal packages (config, docker, version)
 3. **Independent Operation**: CLI and daemon work independently
 4. **Optional Integration**: Daemon is optional; CLI fully functional alone

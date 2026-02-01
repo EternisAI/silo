@@ -1,16 +1,14 @@
 # Silo Daemon (`silod`)
 
-Background service for monitoring and managing Silo Box containers.
+Remote management service for Silo Box.
 
 ## Overview
 
-`silod` is a daemon service that runs alongside the Silo CLI. While the CLI (`silo`) provides on-demand container management, the daemon provides continuous monitoring and automated maintenance:
+`silod` is a daemon service that provides an HTTP API for remote management of Silo Box containers. It allows users or external tools to perform operations that are normally handled by the Silo CLI via standard HTTP requests.
 
-- **Container Health Monitoring**: Continuously checks container status
-- **Auto-restart**: Automatically restarts failed containers
-- **Scheduled Version Checks**: Daily checks for available updates
-- **HTTP API**: Provides status endpoint for CLI queries
-- **Graceful Shutdown**: Clean termination with signal handling
+- **HTTP API**: Provides endpoints for container lifecycle (up, down, restart), upgrades, logs, and status checks.
+- **Shared Configuration**: Uses the same configuration and state as the Silo CLI.
+- **Graceful Shutdown**: Clean termination with signal handling.
 
 ## Architecture
 
@@ -22,9 +20,8 @@ The daemon shares internal packages with the CLI:
 
 Daemon-specific packages:
 - `internal/daemon/daemon.go` - Main orchestration
-- `internal/daemon/monitor.go` - Container health monitoring
-- `internal/daemon/scheduler.go` - Scheduled tasks
 - `internal/daemon/server.go` - HTTP API server
+- `internal/daemon/handlers.go` - API endpoint handlers
 
 ## Installation
 
@@ -34,14 +31,11 @@ Daemon-specific packages:
 # Build daemon binary
 make build-daemon
 
-# Install to /usr/local/bin
+# Install to ~/.local/bin
 make install-daemon
 
 # Install as systemd service
 make install-service
-
-# All-in-one: CLI + daemon + service
-make install-all
 ```
 
 ### Systemd Service
@@ -71,58 +65,24 @@ The daemon uses the same configuration as the CLI:
 
 ### Environment Variables
 
-```bash
-SILO_CONFIG_DIR=/path/to/config  # Override config directory
-SILO_STATE_DIR=/path/to/state    # Override state directory
-```
+- `SILO_CONFIG_DIR`: Override config directory (default: `~/.config/silo`)
+- `SILO_DATA_DIR`: Override data directory (default: `~/.local/share/silo`)
+- `SILO_DAEMON_BIND_ADDRESS`: Override bind address (default: `0.0.0.0`)
 
 ### Daemon Settings
 
-Default configuration (in `daemon.go`):
+Default settings:
+- Port: `9999`
+- Bind Address: `0.0.0.0` (Allows access from host and containers)
 
-```go
-MonitorInterval:      30s              // Container check interval
-VersionCheckCron:     "0 2 * * *"      // Daily at 2 AM
-HealthCheckCron:      "*/5 * * * *"    // Every 5 minutes
-AutoRestart:          true             // Auto-restart failed containers
-ServerEnabled:        true             // Enable HTTP API
-ServerPort:           9999             // API port
-ServerBindAddress:    "0.0.0.0"        // Bind to all interfaces (allows container access)
-```
+## HTTP API
 
-## Features
+The daemon provides a REST API on port `9999`.
 
-### 1. Container Monitoring
-
-Continuously monitors container health every 30 seconds:
-- Detects state changes (running → exited)
-- Auto-restarts exited containers (if enabled)
-- Tracks monitoring statistics
-
-### 2. Scheduled Tasks
-
-**Version Checks** (Daily at 2 AM):
-- Checks for CLI updates from GitHub
-- Checks for image updates from Docker Hub
-- Logs available updates
-
-**Health Checks** (Every 5 minutes):
-- Verifies container status
-- Counts running containers
-- Logs health metrics
-
-### 3. HTTP API
-
-REST API on `http://127.0.0.1:9999`:
-
-**Access from:**
-- **Host machine**: `http://127.0.0.1:9999` or `http://localhost:9999`
-- **Docker containers**: `http://host.docker.internal:9999` (requires `extra_hosts` config)
-
-The daemon binds to `0.0.0.0:9999` to allow access from Docker containers (e.g., backend UI). Port 9999 is not exposed externally in docker-compose, so it's only accessible from the host and containers on the same host.
+### Basic Endpoints
 
 #### `GET /health`
-Basic health check:
+Basic health check.
 ```json
 {
   "status": "ok"
@@ -130,63 +90,47 @@ Basic health check:
 ```
 
 #### `GET /status`
-Detailed daemon status:
+Detailed status including configuration, container states, and version info.
+
+### Command Endpoints (`/api/v1/...`)
+
+All command endpoints return a standard response format:
 ```json
 {
-  "State": {...},
-  "Config": {...},
-  "Containers": [...],
-  "CLIVersion": {...},
-  "ImageVersions": {...},
-  "MonitorStats": {...}
+  "success": true,
+  "message": "Operation completed",
+  "logs": [...]
 }
 ```
 
-#### `GET /stats`
-Monitoring statistics:
-```json
-{
-  "LastCheck": "2024-01-30T10:30:00Z",
-  "CheckCount": 120,
-  "RestartCount": 2,
-  "FailedChecks": 0,
-  "ContainerState": {
-    "backend": "running",
-    "frontend": "running",
-    "postgres": "running"
-  }
-}
-```
+#### `POST /api/v1/up`
+Install or start Silo. Accepts optional `image_tag`, `port`, etc. in JSON body.
+
+#### `POST /api/v1/down`
+Stop Silo containers.
+
+#### `POST /api/v1/restart`
+Restart services. Accepts optional `service` name in JSON body.
+
+#### `POST /api/v1/upgrade`
+Upgrade Silo to the latest version.
+
+#### `GET /api/v1/logs`
+Fetch container logs. Parameters: `service`, `lines`.
+
+#### `GET /api/v1/version`
+Check for CLI and image updates.
+
+#### `GET /api/v1/check`
+Validate configuration and installation.
 
 ## Usage
 
 ### Manual Run (Development)
 
 ```bash
-# Run directly (foreground)
-make run-daemon
-
-# Or with go run
+# Run with go run
 make dev-daemon
-```
-
-### Production (Systemd)
-
-```bash
-# Start service
-sudo systemctl start silod
-
-# Stop service
-sudo systemctl stop silod
-
-# Restart service
-sudo systemctl restart silod
-
-# View logs
-sudo journalctl -u silod -f
-
-# View recent logs
-sudo journalctl -u silod -n 100
 ```
 
 ### Query API
@@ -197,9 +141,6 @@ curl http://127.0.0.1:9999/health
 
 # Full status
 curl http://127.0.0.1:9999/status | jq
-
-# Monitoring stats
-curl http://127.0.0.1:9999/stats | jq
 ```
 
 ## Lifecycle
@@ -207,63 +148,19 @@ curl http://127.0.0.1:9999/stats | jq
 ### Startup
 1. Load configuration from `~/.config/silo/config.yml`
 2. Load state from `~/.local/share/silo/state.json`
-3. Verify installation (must run `silo up` first)
-4. Start monitor goroutine
-5. Start scheduler goroutine
-6. Start HTTP API server
-7. Wait for shutdown signal
+3. Start HTTP API server on port 9999
+4. Wait for shutdown signal
 
 ### Shutdown
 1. Receive SIGINT or SIGTERM
-2. Cancel context (stops all goroutines)
-3. Stop HTTP server gracefully
-4. Wait for goroutines to finish
-5. Exit cleanly
-
-## Monitoring Stats
-
-The monitor tracks:
-- **LastCheck**: Timestamp of last health check
-- **CheckCount**: Total number of checks performed
-- **RestartCount**: Number of automatic restarts
-- **FailedChecks**: Number of checks that failed
-- **ContainerState**: Current state of each container
-
-## Auto-Restart
-
-When `AutoRestart: true`:
-- Monitors for containers in `exited` state
-- Attempts restart using `docker compose restart`
-- Logs success/failure
-- Increments `RestartCount` on success
-
-## Version Checks
-
-Daily checks at 2 AM:
-- Queries GitHub API for latest CLI release
-- Queries Docker Hub for latest backend/frontend tags
-- Compares current vs latest versions
-- Logs if updates available (non-blocking)
-
-## Error Handling
-
-The daemon handles errors gracefully:
-- Failed health checks logged as errors
-- API timeouts don't crash daemon
-- Invalid state displays helpful error messages
-- Signal handling ensures clean shutdown
+2. Stop HTTP server gracefully
+3. Exit cleanly
 
 ## Troubleshooting
 
 ### Daemon won't start
 
 ```bash
-# Check if silo is installed
-silo status
-
-# If not, run:
-silo up
-
 # Check daemon logs
 sudo journalctl -u silod -n 50
 ```
@@ -276,75 +173,4 @@ sudo systemctl status silod
 
 # Check port availability
 sudo netstat -tlnp | grep 9999
-
-# Restart daemon
-sudo systemctl restart silod
 ```
-
-### Containers not auto-restarting
-
-- Verify `AutoRestart: true` in daemon config
-- Check daemon logs for restart attempts
-- Ensure Docker Compose file exists
-- Verify container restart policy
-
-## Development
-
-### Run Tests
-
-```bash
-make test
-```
-
-### Format Code
-
-```bash
-make fmt
-```
-
-### Lint
-
-```bash
-make lint
-```
-
-### Build for Development
-
-```bash
-# Build daemon
-make build-daemon
-
-# Run daemon (foreground)
-./bin/silod
-```
-
-## Related Files
-
-- `cmd/silod/main.go` - Daemon entry point
-- `internal/daemon/` - Daemon implementation
-- `scripts/silod.service` - Systemd service file
-- `Makefile` - Build targets
-
-## Comparison: CLI vs Daemon
-
-| Feature | CLI (`silo`) | Daemon (`silod`) |
-|---------|--------------|------------------|
-| **Invocation** | On-demand | Background service |
-| **Monitoring** | Manual status checks | Continuous monitoring |
-| **Auto-restart** | No | Yes (configurable) |
-| **Version checks** | Manual command | Scheduled daily |
-| **API** | No | HTTP REST API |
-| **Process** | Short-lived | Long-running |
-| **Installation** | `silo up/down/status` | Container monitoring |
-| **Use case** | User operations | Automated maintenance |
-
-## Future Enhancements
-
-Potential features for future releases:
-- Configurable monitor intervals
-- Email/Slack notifications on failures
-- Auto-upgrade on version detection
-- Resource usage metrics (CPU, memory, disk)
-- Alert thresholds and triggers
-- Web UI dashboard
-- Log rotation and archival

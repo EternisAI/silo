@@ -21,6 +21,7 @@ This is a Cobra-based CLI that wraps Docker Compose operations. The CLI is state
 ```
 internal/
 ├── cli/            # Cobra command implementations (up, down, status, logs, upgrade, check, version)
+├── daemon/         # HTTP API server for remote management
 ├── config/         # Config/State loading, saving, validation, path management
 ├── docker/         # Docker Compose wrapper (up, down, pull, ps, logs, restart)
 ├── installer/      # Multi-step installation (preflight → dirs → configs → images → containers)
@@ -31,7 +32,9 @@ internal/
 pkg/
 └── logger/         # Colored structured logging
 
-cmd/silo/           # Entry point
+cmd/
+├── silo/           # CLI entry point
+└── silod/          # Daemon entry point
 ```
 
 ## Make Commands

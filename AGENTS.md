@@ -16,7 +16,7 @@ make dev ARGS="up"  # Run without building (go run)
 
 ## Architecture Overview
 
-Two binaries: **silo** (CLI) and **silod** (daemon). CLI orchestrates Docker Compose operations. Daemon provides background service and HTTP API. Both share config/state from `~/.config/silo/` and `~/.local/share/silo/`.
+Two binaries: **silo** (CLI) and **silod** (daemon). CLI orchestrates Docker Compose operations. Daemon provides HTTP API for remote management. Both share config/state from `~/.config/silo/` and `~/.local/share/silo/`.
 
 ```
 CLI (cmd/silo)                     Daemon (cmd/silod)
@@ -28,7 +28,12 @@ CLI (cmd/silo)                     Daemon (cmd/silod)
        ├─ up/down/status/logs            ├─ /health
        ├─ upgrade/check/version          ├─ /status
        │                                  ├─ /api/v1/up
-       └─ Installer/Docker/Updater       └─ /api/v1/down...
+       └─ Installer/Docker/Updater       ├─ /api/v1/down
+                                          ├─ /api/v1/restart
+                                          ├─ /api/v1/upgrade
+                                          ├─ /api/v1/logs
+                                          ├─ /api/v1/version
+                                          └─ /api/v1/check
 ```
 
 ## Project Structure
