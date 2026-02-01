@@ -15,7 +15,7 @@ func TestDefaultConfig(t *testing.T) {
 		t.Error("expected ServerEnabled to be true")
 	}
 
-	if cfg.ServerBindAddress != "0.0.0.0" {
-		t.Errorf("expected ServerBindAddress to be 0.0.0.0, got %s", cfg.ServerBindAddress)
+	if cfg.ServerBindAddress != "127.0.0.1" {
+		t.Errorf("expected ServerBindAddress to be 127.0.0.1, got %s", cfg.ServerBindAddress)
 	}
 }

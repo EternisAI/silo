@@ -80,10 +80,10 @@ The daemon uses the same configuration as the CLI:
 
 Default settings:
 - Port: `9999` (TCP fallback)
-- Bind Address: `0.0.0.0` (TCP fallback)
+- Bind Address: `127.0.0.1` (TCP fallback, local-only)
 - Socket Path: `~/.local/share/silo/silod.sock` (Primary)
 
-The daemon prioritizes the Unix domain socket. TCP listener is only used if the socket path is explicitly disabled or unavailable.
+The daemon prioritizes the Unix domain socket for container communication. The TCP listener binds to localhost only and serves as a fallback for local debugging.
 
 ## HTTP API
 
