@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	DefaultVersion    = "0.1.5"
-	DefaultImageTag   = "0.1.7"
+	DefaultVersion    = "0.1.6"
+	DefaultImageTag   = "0.1.8"
 	DefaultPort       = 80
 	DefaultLLMBaseURL = "htpp://host.docker.internal:30000/v1"
 	DefaultModel      = "glm47-awq"
