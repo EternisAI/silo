@@ -107,7 +107,7 @@ func New() (*Daemon, error) {
 		if bindAddr == "" {
 			bindAddr = daemonCfg.ServerBindAddress
 		}
-		d.server = NewServer(bindAddr, daemonCfg.ServerPort, d, log)
+		d.server = NewServer(bindAddr, daemonCfg.ServerPort, d.config.SocketFile, d, log)
 	}
 
 	return d, nil

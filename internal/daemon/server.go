@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/eternisai/silo/pkg/logger"
@@ -12,20 +14,22 @@ import (
 
 // Server provides HTTP API for daemon
 type Server struct {
-	bindAddr string
-	port     int
-	daemon   *Daemon
-	logger   *logger.Logger
-	server   *http.Server
+	bindAddr   string
+	port       int
+	socketPath string
+	daemon     *Daemon
+	logger     *logger.Logger
+	server     *http.Server
 }
 
 // NewServer creates a new HTTP server
-func NewServer(bindAddr string, port int, daemon *Daemon, log *logger.Logger) *Server {
+func NewServer(bindAddr string, port int, socketPath string, daemon *Daemon, log *logger.Logger) *Server {
 	return &Server{
-		bindAddr: bindAddr,
-		port:     port,
-		daemon:   daemon,
-		logger:   log,
+		bindAddr:   bindAddr,
+		port:       port,
+		socketPath: socketPath,
+		daemon:     daemon,
+		logger:     log,
 	}
 }
 
@@ -53,11 +57,39 @@ func (s *Server) Start(ctx context.Context) error {
 		WriteTimeout: 10 * time.Minute,
 	}
 
-	s.logger.Info("Starting API server on http://%s:%d", s.bindAddr, s.port)
+	var listener net.Listener
+	var err error
+
+	if s.socketPath != "" {
+		// Remove existing socket if it exists
+		if _, err := os.Stat(s.socketPath); err == nil {
+			if err := os.Remove(s.socketPath); err != nil {
+				return fmt.Errorf("failed to remove existing socket: %w", err)
+			}
+		}
+
+		listener, err = net.Listen("unix", s.socketPath)
+		if err != nil {
+			return fmt.Errorf("failed to listen on unix socket: %w", err)
+		}
+
+		// Set permissions to allow container access
+		if err := os.Chmod(s.socketPath, 0666); err != nil {
+			s.logger.Warn("Failed to set socket permissions: %v", err)
+		}
+
+		s.logger.Info("Starting API server on unix://%s", s.socketPath)
+	} else {
+		listener, err = net.Listen("tcp", s.server.Addr)
+		if err != nil {
+			return fmt.Errorf("failed to listen on tcp: %w", err)
+		}
+		s.logger.Info("Starting API server on http://%s:%d", s.bindAddr, s.port)
+	}
 
 	errChan := make(chan error, 1)
 	go func() {
-		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.server.Serve(listener); err != nil && err != http.ErrServerClosed {
 			errChan <- err
 		}
 	}()
@@ -79,7 +111,18 @@ func (s *Server) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	return s.server.Shutdown(ctx)
+	if err := s.server.Shutdown(ctx); err != nil {
+		return err
+	}
+
+	// Remove socket file if using unix socket
+	if s.socketPath != "" {
+		if err := os.Remove(s.socketPath); err != nil && !os.IsNotExist(err) {
+			s.logger.Warn("Failed to remove socket file: %v", err)
+		}
+	}
+
+	return nil
 }
 
 // handleHealth returns basic health status

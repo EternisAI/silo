@@ -17,6 +17,7 @@ type Paths struct {
 	ConfigFile  string
 	ComposeFile string
 	StateFile   string
+	SocketFile  string
 	AppDataDir  string
 }
 
@@ -51,6 +52,7 @@ func NewPaths(configDir, dataDir string) *Paths {
 		ConfigFile:  filepath.Join(configDir, ConfigFileName),
 		ComposeFile: filepath.Join(dataDir, ComposeFileName),
 		StateFile:   filepath.Join(dataDir, StateFileName),
+		SocketFile:  filepath.Join(dataDir, "silod.sock"),
 		AppDataDir:  filepath.Join(dataDir, "data"),
 	}
 }
