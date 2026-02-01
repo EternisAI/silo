@@ -79,8 +79,11 @@ The daemon uses the same configuration as the CLI:
 ### Daemon Settings
 
 Default settings:
-- Port: `9999`
-- Bind Address: `0.0.0.0` (Allows access from host and containers)
+- Port: `9999` (TCP fallback)
+- Bind Address: `0.0.0.0` (TCP fallback)
+- Socket Path: `~/.local/share/silo/silod.sock` (Primary)
+
+The daemon prioritizes the Unix domain socket. TCP listener is only used if the socket path is explicitly disabled or unavailable.
 
 ## HTTP API
 
