@@ -2,6 +2,13 @@
 
 Remote management service for Silo Box.
 
+## Transition to Unix Socket (Plan)
+
+The daemon is being updated to serve its API via a Unix domain socket instead of TCP port 9999.
+- **Purpose**: Enhanced security (local-only) and simplified container communication.
+- **Socket Path**: `~/.local/share/silo/silod.sock` (mounted to `/var/run/silod.sock` in containers).
+- **Communication**: Backend service will connect via `http://unix:/var/run/silod.sock`.
+
 ## Overview
 
 `silod` is a daemon service that provides an HTTP API for remote management of Silo Box containers. It allows users or external tools to perform operations that are normally handled by the Silo CLI via standard HTTP requests.
@@ -72,8 +79,11 @@ The daemon uses the same configuration as the CLI:
 ### Daemon Settings
 
 Default settings:
-- Port: `9999`
-- Bind Address: `0.0.0.0` (Allows access from host and containers)
+- Port: `9999` (TCP fallback)
+- Bind Address: `127.0.0.1` (TCP fallback, local-only)
+- Socket Path: `~/.local/share/silo/silod.sock` (Primary)
+
+The daemon prioritizes the Unix domain socket for container communication. The TCP listener binds to localhost only and serves as a fallback for local debugging.
 
 ## HTTP API
 

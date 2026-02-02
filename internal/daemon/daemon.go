@@ -38,7 +38,7 @@ func DefaultConfig() *Config {
 	return &Config{
 		ServerEnabled:     true,
 		ServerPort:        9999,
-		ServerBindAddress: "0.0.0.0", // Allow access from host and Docker containers
+		ServerBindAddress: "127.0.0.1", // Local-only TCP fallback (Unix socket is primary)
 		LogFile:           "",
 	}
 }
@@ -107,7 +107,7 @@ func New() (*Daemon, error) {
 		if bindAddr == "" {
 			bindAddr = daemonCfg.ServerBindAddress
 		}
-		d.server = NewServer(bindAddr, daemonCfg.ServerPort, d, log)
+		d.server = NewServer(bindAddr, daemonCfg.ServerPort, d.config.SocketFile, d, log)
 	}
 
 	return d, nil

@@ -14,7 +14,7 @@ const (
 	DefaultVersion    = "0.1.6"
 	DefaultImageTag   = "0.1.8"
 	DefaultPort       = 80
-	DefaultLLMBaseURL = "htpp://host.docker.internal:30000/v1"
+	DefaultLLMBaseURL = "http://host.docker.internal:30000/v1"
 	DefaultModel      = "glm47-awq"
 
 	// Inference engine defaults
@@ -44,6 +44,7 @@ type Config struct {
 	DefaultModel string `yaml:"default_model"`
 	ConfigFile   string `yaml:"-"`
 	DataDir      string `yaml:"-"`
+	SocketFile   string `yaml:"-"`
 
 	// Inference engine configuration
 	InferencePort        int    `yaml:"inference_port"`
@@ -79,6 +80,7 @@ func NewDefaultConfig(paths *Paths) *Config {
 		DefaultModel: DefaultModel,
 		ConfigFile:   paths.ConfigFile,
 		DataDir:      paths.AppDataDir,
+		SocketFile:   paths.SocketFile,
 
 		// Inference engine defaults
 		InferencePort:        DefaultInferencePort,
@@ -130,6 +132,7 @@ func LoadOrDefault(path string, paths *Paths) (*Config, error) {
 	merged := mergeConfigs(existing, defaults)
 	merged.ConfigFile = paths.ConfigFile
 	merged.DataDir = paths.AppDataDir
+	merged.SocketFile = paths.SocketFile
 
 	return merged, nil
 }

@@ -9,7 +9,7 @@ import (
 )
 
 func TestRespondError(t *testing.T) {
-	s := &Server{}
+	s := &Server{socketPath: ""}
 	w := httptest.NewRecorder()
 
 	s.respondError(w, http.StatusBadRequest, "test error", "test details")
@@ -35,7 +35,7 @@ func TestRespondError(t *testing.T) {
 }
 
 func TestRespondWithLogs(t *testing.T) {
-	s := &Server{}
+	s := &Server{socketPath: ""}
 	w := httptest.NewRecorder()
 
 	logs := []LogEntry{
@@ -65,7 +65,7 @@ func TestRespondWithLogs(t *testing.T) {
 }
 
 func TestHandleHealthEndpoint(t *testing.T) {
-	s := &Server{}
+	s := &Server{socketPath: ""}
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
 
@@ -86,7 +86,7 @@ func TestHandleHealthEndpoint(t *testing.T) {
 }
 
 func TestMethodNotAllowed(t *testing.T) {
-	s := &Server{}
+	s := &Server{socketPath: ""}
 
 	tests := []struct {
 		name     string
