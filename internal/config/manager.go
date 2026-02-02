@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	DefaultVersion    = "0.1.7"
+	DefaultVersion    = "0.1.8"
 	DefaultImageTag   = "0.1.9"
 	DefaultPort       = 80
 	DefaultLLMBaseURL = "http://host.docker.internal:30000/v1"
