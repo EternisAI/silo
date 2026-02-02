@@ -25,7 +25,7 @@ services:
       - DEFAULT_MODEL={{.DefaultModel}}
       - DATABASE_URL=postgres://silobox:silobox@postgres:5432/silobox?sslmode=disable
       - PORT=8080
-      - SILOD_BASE_URL=http://unix:/var/run/silod.sock
+      - SILOD_SOCKET_PATH=/var/run/silod.sock
     volumes:
       - {{.SocketFile}}:/var/run/silod.sock
     extra_hosts:
