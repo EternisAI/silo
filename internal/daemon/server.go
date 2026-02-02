@@ -52,7 +52,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 	s.server = &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", s.bindAddr, s.port),
-		Handler:      mux,
+		Handler:      s.loggingMiddleware(mux),
 		ReadTimeout:  10 * time.Minute,
 		WriteTimeout: 10 * time.Minute,
 	}
@@ -123,6 +123,14 @@ func (s *Server) Stop() error {
 	}
 
 	return nil
+}
+
+// loggingMiddleware logs each incoming request
+func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.logger.Info("%s %s", r.Method, r.URL.Path)
+		next.ServeHTTP(w, r)
+	})
 }
 
 // handleHealth returns basic health status
