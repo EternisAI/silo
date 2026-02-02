@@ -55,7 +55,7 @@ func (s *Server) handleUp(w http.ResponseWriter, r *http.Request) {
 		// Already installed, just start containers
 		apiLog.Info("Starting containers...")
 
-		ctx, cancel := context.WithTimeout(r.Context(), UpTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), UpTimeout)
 		defer cancel()
 
 		if err := docker.Up(ctx, s.daemon.paths.ComposeFile); err != nil {
@@ -94,7 +94,7 @@ func (s *Server) handleUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Run installer (using daemon logger for actual installation)
-	ctx, cancel := context.WithTimeout(r.Context(), UpTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), UpTimeout)
 	defer cancel()
 
 	// Use a quiet logger to avoid outputting to terminal
@@ -125,7 +125,7 @@ func (s *Server) handleDown(w http.ResponseWriter, r *http.Request) {
 	apiLog := NewAPILogger()
 	apiLog.Info("Stopping containers...")
 
-	ctx, cancel := context.WithTimeout(r.Context(), DownTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), DownTimeout)
 	defer cancel()
 
 	if err := docker.Down(ctx, s.daemon.paths.ComposeFile, false); err != nil {
@@ -164,7 +164,7 @@ func (s *Server) handleRestart(w http.ResponseWriter, r *http.Request) {
 		apiLog.Info("Restarting all services")
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), RestartTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), RestartTimeout)
 	defer cancel()
 
 	if err := docker.Restart(ctx, s.daemon.paths.ComposeFile, req.Service); err != nil {
@@ -202,7 +202,7 @@ func (s *Server) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Run updater (using daemon logger for actual update)
-	ctx, cancel := context.WithTimeout(r.Context(), UpgradeTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), UpgradeTimeout)
 	defer cancel()
 
 	quietLog := logger.New(true)
