@@ -7,8 +7,8 @@ Silo Box is a self-hosted AI chat application. This CLI installs and orchestrate
 ## Requirements
 
 - Docker 20.10+ with Compose v2
-- Debian/Ubuntu Linux
-- User in `docker` group
+- Linux (Debian/Ubuntu) or macOS
+- User in `docker` group (Linux) or Docker Desktop (macOS)
 - 5GB+ free disk space
 
 ## Installation
@@ -28,7 +28,7 @@ make build
 cp bin/silo ~/.local/bin/
 ```
 
-Add to PATH if needed (~/.bashrc):
+Add to PATH if needed (~/.bashrc or ~/.zshrc on macOS):
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"

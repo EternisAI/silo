@@ -16,8 +16,20 @@ get_latest_release() {
 detect_arch() {
   case "$(uname -m)" in
     x86_64) echo "amd64" ;;
+    aarch64|arm64) echo "arm64" ;;
     *)
       echo "Error: Unsupported architecture $(uname -m)"
+      exit 1
+      ;;
+  esac
+}
+
+detect_os() {
+  case "$(uname -s)" in
+    Linux) echo "linux" ;;
+    Darwin) echo "darwin" ;;
+    *)
+      echo "Error: Unsupported OS $(uname -s)"
       exit 1
       ;;
   esac
@@ -93,18 +105,15 @@ install_systemd_service() {
 }
 
 main() {
-  if [ "$(uname -s)" != "Linux" ]; then
-    echo "Error: This script only supports Linux (Debian/Ubuntu)"
-    exit 1
-  fi
+  OS=$(detect_os)
+  ARCH=$(detect_arch)
 
   check_dependencies
 
   echo "Installing Silo CLI and Daemon..."
 
   VERSION=${1:-$(get_latest_release)}
-  ARCH=$(detect_arch)
-  PLATFORM="linux_${ARCH}"
+  PLATFORM="${OS}_${ARCH}"
 
   echo "Version: $VERSION"
   echo "Platform: $PLATFORM"
@@ -139,16 +148,24 @@ main() {
 
   if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     echo ""
-    echo "Add to PATH (add to ~/.bashrc):"
+    if [ "$OS" = "darwin" ]; then
+      echo "Add to PATH (add to ~/.zshrc):"
+    else
+      echo "Add to PATH (add to ~/.bashrc):"
+    fi
     echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""
   fi
 
   echo ""
   echo "Run 'silo --help' to get started"
   
-  # Install systemd service if daemon was installed
-  if [ -f "$INSTALL_DIR/$DAEMON_BINARY" ]; then
+  # Install systemd service if daemon was installed (Linux only)
+  if [ "$OS" = "linux" ] && [ -f "$INSTALL_DIR/$DAEMON_BINARY" ]; then
     install_systemd_service
+  elif [ "$OS" = "darwin" ] && [ -f "$INSTALL_DIR/$DAEMON_BINARY" ]; then
+    echo ""
+    echo "Note: On macOS, run silod manually or create a launchd service."
+    echo "  To run manually: $INSTALL_DIR/$DAEMON_BINARY"
   fi
 }
 

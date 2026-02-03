@@ -11,8 +11,10 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
+      - darwin
     goarch:
       - amd64
+      - arm64
     ldflags:
       - -s -w
       - -X github.com/eternisai/silo/internal/cli.version={{.Version}}
@@ -26,8 +28,10 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
+      - darwin
     goarch:
       - amd64
+      - arm64
     ldflags:
       - -s -w
       - -X main.version={{.Version}}
