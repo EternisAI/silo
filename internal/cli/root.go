@@ -23,6 +23,7 @@ var rootCmd = &cobra.Command{
 	Short: "Silo - Application deployment and management CLI",
 	Long: `Silo is a CLI tool to deploy, manage, and upgrade the Silo application
 with PostgreSQL and pgvector.`,
+	Version: version,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		log = logger.New(verbose)
 	},
@@ -37,4 +38,6 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable debug logging")
 	rootCmd.PersistentFlags().StringVar(&configDir, "config-dir", config.DefaultConfigDir(), "configuration directory")
+
+	rootCmd.SetVersionTemplate("silo version {{.Version}}\n")
 }
