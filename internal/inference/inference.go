@@ -216,6 +216,7 @@ func (e *Engine) buildDockerRunArgs() []string {
 		"--ipc=host",
 		"--ulimit", "memlock=-1:-1",
 		"--ulimit", "nofile=1048576:1048576",
+		"--tool-call-parser", "glm",
 		"-p", "30000:30000",
 		"-e", "CUDA_VISIBLE_DEVICES=0,1,2",
 		"-e", "PYTORCH_ALLOC_CONF=expandable_segments:True",
