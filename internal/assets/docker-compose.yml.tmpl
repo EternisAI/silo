@@ -26,6 +26,9 @@ services:
       - DATABASE_URL=postgres://silobox:silobox@postgres:5432/silobox?sslmode=disable
       - PORT=8080
       - SILOD_SOCKET_PATH=/var/run/silod.sock
+{{- if .EnableDeepResearch}}
+      - DEEP_RESEARCH_URL=http://deep-research:{{.DeepResearchPort}}
+{{- end}}
     volumes:
       - {{.SocketFile}}:/var/run/silod.sock
     extra_hosts:
@@ -33,6 +36,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+{{- if .EnableDeepResearch}}
+      deep-research:
+        condition: service_healthy
+{{- end}}
     restart: unless-stopped
 
   frontend:
@@ -97,4 +104,29 @@ services:
     depends_on:
       - frontend
     restart: unless-stopped
+{{end}}
+{{if .EnableDeepResearch}}
+  deep-research:
+    platform: linux/amd64
+    image: {{.DeepResearchImage}}
+    ports:
+      - "{{.DeepResearchPort}}:{{.DeepResearchPort}}"
+    environment:
+      - LOG_LEVEL=DEBUG
+      - PYTHONPATH=/usr/src
+      - PYTHONUNBUFFERED=TRUE
+      - MODEL_NAME={{.DefaultModel}}
+      - BASE_URL={{.LLMBaseURL}}
+      - API_KEY=eternisai-api-key
+      - SEARCH_PROVIDER={{.SearchProvider}}
+      - PERPLEXITY_API_KEY={{.PerplexityAPIKey}}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{.DeepResearchPort}}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 {{end}}

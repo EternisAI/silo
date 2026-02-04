@@ -227,6 +227,17 @@ inference_threads: 16
 inference_http_threads: 8
 inference_fit: "off"
 inference_gpu_devices: "\"0\", \"1\", \"2\""  # Quoted CSV for YAML
+
+# Service toggles
+enable_inference_engine: false         # Enable llama.cpp inference
+enable_proxy_agent: false              # Enable remote proxy agent
+enable_deep_research: true             # Enable deep research service
+
+# Deep research configuration
+deep_research_image: "ghcr.io/eternisai/deep_research:sha-ff37ec2"
+deep_research_port: 3031
+search_provider: "perplexity"
+perplexity_api_key: ""                 # Required for deep research web search
 ```
 
 ### state.json Schema
@@ -361,6 +372,31 @@ sudo systemctl restart silod  # Restart
 2. Keep steps sequential and idempotent
 3. Add preflight checks to `internal/installer/preflight.go` if needed
 4. Update state tracking if adding new metadata
+
+## Releasing
+
+Releases are automated via GitHub Actions. **Do not manually create tags.**
+
+### Creating a Release
+
+1. Push changes to `main` (via PR or direct push)
+2. Go to **Actions** → **Release** → **Run workflow**
+3. Choose version bump type:
+   - `patch` (default): Bug fixes, minor updates (0.1.2 → 0.1.3)
+   - `minor`: New features, backward compatible (0.1.2 → 0.2.0)
+   - `major`: Breaking changes (0.1.2 → 1.0.0)
+4. Click **Run workflow**
+
+### What Happens
+
+1. **Tag created** - Auto-increments version based on bump type
+2. **GoReleaser runs** - Builds binaries for Linux/macOS (amd64/arm64)
+3. **GitHub Release created** - With binaries, checksums, and changelog
+4. **Install script updated** - Users running `curl | bash` get the new version
+
+### CI Pipeline
+
+PRs to `main` trigger CI: build, test, lint.
 
 ## Related Projects
 

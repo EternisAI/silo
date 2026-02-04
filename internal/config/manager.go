@@ -34,6 +34,13 @@ const (
 	// Service toggles
 	DefaultEnableInferenceEngine = false
 	DefaultEnableProxyAgent      = false
+	DefaultEnableDeepResearch    = true
+
+	// Deep research defaults
+	DefaultDeepResearchImage    = "ghcr.io/eternisai/deep_research:sha-ff37ec2"
+	DefaultDeepResearchPort     = 3031
+	DefaultSearchProvider       = "perplexity"
+	DefaultPerplexityAPIKey     = ""
 )
 
 type Config struct {
@@ -63,6 +70,13 @@ type Config struct {
 	// Service toggles
 	EnableInferenceEngine bool `yaml:"enable_inference_engine"`
 	EnableProxyAgent      bool `yaml:"enable_proxy_agent"`
+	EnableDeepResearch    bool `yaml:"enable_deep_research"`
+
+	// Deep research configuration
+	DeepResearchImage string `yaml:"deep_research_image"`
+	DeepResearchPort  int    `yaml:"deep_research_port"`
+	SearchProvider    string `yaml:"search_provider"`
+	PerplexityAPIKey  string `yaml:"perplexity_api_key"`
 }
 
 type State struct {
@@ -99,6 +113,13 @@ func NewDefaultConfig(paths *Paths) *Config {
 		// Service toggles
 		EnableInferenceEngine: DefaultEnableInferenceEngine,
 		EnableProxyAgent:      DefaultEnableProxyAgent,
+		EnableDeepResearch:    DefaultEnableDeepResearch,
+
+		// Deep research defaults
+		DeepResearchImage: DefaultDeepResearchImage,
+		DeepResearchPort:  DefaultDeepResearchPort,
+		SearchProvider:    DefaultSearchProvider,
+		PerplexityAPIKey:  DefaultPerplexityAPIKey,
 	}
 }
 
