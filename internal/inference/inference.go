@@ -215,10 +215,13 @@ func (e *Engine) buildDockerRunArgs() []string {
 		"--restart", "unless-stopped",
 	}
 
-	// GPU configuration
+	// GPU configuration (required for SGLang)
+	// Note: Docker requires quotes around device list: "device=0,1,2"
 	if len(cfg.GPUDevices) > 0 {
 		gpuDevices := strings.Join(cfg.GPUDevices, ",")
 		args = append(args, "--gpus", fmt.Sprintf(`"device=%s"`, gpuDevices))
+	} else {
+		args = append(args, "--gpus", "all")
 	}
 
 	// Memory and IPC settings
