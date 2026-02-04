@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DefaultContainerName = "silo-inference"
+	DefaultContainerName = "glm_model"
 	DefaultImage         = "lmsysorg/sglang:latest"
 )
 
