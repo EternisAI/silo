@@ -320,6 +320,23 @@ func UpdateImageTag(cfg *Config, newTag string, configPath string) error {
 	return nil
 }
 
+// UpdateDeepResearchImage updates the deep_research_image to the current default
+// if it differs from the config. Returns true if updated, false if already current.
+func UpdateDeepResearchImage(cfg *Config, configPath string) (bool, error) {
+	if cfg.DeepResearchImage == DefaultDeepResearchImage {
+		return false, nil
+	}
+
+	oldImage := cfg.DeepResearchImage
+	cfg.DeepResearchImage = DefaultDeepResearchImage
+
+	if err := Save(configPath, cfg); err != nil {
+		return false, fmt.Errorf("failed to save updated config: %w", err)
+	}
+
+	return true, fmt.Errorf("updated from %s", oldImage)
+}
+
 func Validate(config *Config) error {
 	if config.ImageTag == "" {
 		return fmt.Errorf("image_tag cannot be empty")

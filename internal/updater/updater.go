@@ -46,6 +46,15 @@ func (u *Updater) Update(ctx context.Context) error {
 		u.logger.Info("Continuing with current version %s", u.config.ImageTag)
 	}
 
+	// Update deep research image to latest default if outdated
+	if updated, info := config.UpdateDeepResearchImage(u.config, u.paths.ConfigFile); updated {
+		u.logger.Info("Deep research image %s", info)
+		// Regenerate docker-compose with new image
+		if err := config.GenerateDockerCompose(u.config, u.paths.ComposeFile); err != nil {
+			u.logger.Warn("Failed to regenerate docker-compose for deep research: %v", err)
+		}
+	}
+
 	if err := u.pullImages(ctx); err != nil {
 		return fmt.Errorf("failed to pull images: %w", err)
 	}
