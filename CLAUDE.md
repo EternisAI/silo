@@ -135,6 +135,17 @@ logger.Success("Services started")
 logger.Error("Failed: %v", err)
 ```
 
+## Releasing
+
+Releases are automated via GitHub Actions. **Do not manually create tags.**
+
+```bash
+# Push changes to main, then trigger release
+gh workflow run Release
+```
+
+The workflow auto-increments the version, builds binaries via GoReleaser, and creates a GitHub Release.
+
 ## Related
 
 - **silo_box/** — The application this CLI deploys (Go backend + Next.js frontend)

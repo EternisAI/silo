@@ -392,16 +392,16 @@ Releases are automated via GitHub Actions. **Do not manually create tags.**
 ### Creating a Release
 
 1. Push changes to `main` (via PR or direct push)
-2. Go to **Actions** → **Release** → **Run workflow**
-3. Choose version bump type:
-   - `patch` (default): Bug fixes, minor updates (0.1.2 → 0.1.3)
-   - `minor`: New features, backward compatible (0.1.2 → 0.2.0)
-   - `major`: Breaking changes (0.1.2 → 1.0.0)
-4. Click **Run workflow**
+2. Trigger the Release workflow:
+   ```bash
+   gh workflow run Release
+   ```
+   Or via UI: **Actions** → **Release** → **Run workflow**
+3. The workflow auto-increments version (patch bump by default)
 
 ### What Happens
 
-1. **Tag created** - Auto-increments version based on bump type
+1. **Tag created** - Auto-increments version based on latest tag
 2. **GoReleaser runs** - Builds binaries for Linux/macOS (amd64/arm64)
 3. **GitHub Release created** - With binaries, checksums, and changelog
 4. **Install script updated** - Users running `curl | bash` get the new version
