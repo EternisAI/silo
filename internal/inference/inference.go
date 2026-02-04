@@ -232,7 +232,7 @@ func (e *Engine) buildDockerRunArgs() []string {
 		"--max-total-tokens", "262144",
 		"--context-length", "131072",
 		"--mem-fraction-static", "0.88",
-		"--chunked-prefill-size", "8192",
+		"--chunked-prefill-size", "-1",
 		"--schedule-policy", "fcfs",
 		"--kv-cache-dtype", "fp8_e4m3",
 		"--attention-backend", "flashinfer",
