@@ -7,6 +7,7 @@ import (
 
 	"github.com/eternisai/silo/internal/config"
 	"github.com/eternisai/silo/internal/docker"
+	"github.com/eternisai/silo/internal/inference"
 	"github.com/spf13/cobra"
 )
 
@@ -56,20 +57,46 @@ var statusCmd = &cobra.Command{
 		if len(containers) == 0 {
 			log.Warn("No containers running")
 			log.Info("Run 'silo up' to start")
-			return nil
+		} else {
+			log.Info("Containers:")
+			for _, c := range containers {
+				status := "✓"
+				if c.State != "running" {
+					status = "✗"
+				}
+
+				log.Info("  %s %s (%s)", status, c.Service, c.State)
+				log.Info("    Name:   %s", c.Name)
+				log.Info("    Image:  %s", c.Image)
+				log.Info("    Status: %s", c.Status)
+			}
 		}
 
-		log.Info("Containers:")
-		for _, c := range containers {
-			status := "✓"
-			if c.State != "running" {
-				status = "✗"
-			}
+		// Show inference engine status
+		fmt.Println()
+		if cfg != nil {
+			engine := inference.New(cfg, log)
+			info, err := engine.Status(ctx)
+			if err != nil {
+				log.Warn("Failed to get inference engine status: %v", err)
+			} else {
+				log.Info("Inference Engine:")
+				if info.Running {
+					log.Info("  ✓ %s (running)", info.Name)
+					log.Info("    Image:  %s", info.Image)
+					log.Info("    Status: %s", info.Status)
 
-			log.Info("  %s %s (%s)", status, c.Service, c.State)
-			log.Info("    Name:   %s", c.Name)
-			log.Info("    Image:  %s", c.Image)
-			log.Info("    Status: %s", c.Status)
+					// Try health check
+					if err := engine.HealthCheck(ctx); err == nil {
+						log.Success("  Health: OK")
+					} else {
+						log.Warn("  Health: Not responding (may still be starting)")
+					}
+				} else {
+					log.Info("  ✗ %s (%s)", info.Name, info.State)
+					log.Info("    Use 'silo inference up' to start")
+				}
+			}
 		}
 
 		return nil

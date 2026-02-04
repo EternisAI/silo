@@ -17,7 +17,7 @@ const (
 	DefaultLLMBaseURL = "http://host.docker.internal:30000/v1"
 	DefaultModel      = "glm47-awq"
 
-	// Inference engine defaults
+	// Inference engine defaults (legacy llama.cpp - kept for compatibility)
 	DefaultInferencePort        = 30000
 	DefaultInferenceModelFile   = "GLM-4.7-Q4_K_M.gguf"
 	DefaultInferenceShmSize     = "16g"
@@ -42,6 +42,71 @@ const (
 	DefaultSearchProvider       = "perplexity"
 	DefaultPerplexityAPIKey     = ""
 )
+
+// SGLangConfig holds configuration for the SGLang inference engine
+type SGLangConfig struct {
+	// Container settings
+	Enabled         bool     `yaml:"enabled" json:"enabled"`
+	Image           string   `yaml:"image" json:"image"`
+	ContainerName   string   `yaml:"container_name" json:"container_name"`
+	Port            int      `yaml:"port" json:"port"`
+	GPUDevices      []string `yaml:"gpu_devices" json:"gpu_devices"`
+	ShmSize         string   `yaml:"shm_size" json:"shm_size"`
+	ModelPath       string   `yaml:"model_path" json:"model_path"`
+	HuggingFaceCache string  `yaml:"huggingface_cache" json:"huggingface_cache"`
+
+	// Parallelism
+	DPSize int `yaml:"dp_size" json:"dp_size"`
+	TPSize int `yaml:"tp_size" json:"tp_size"`
+
+	// Request limits
+	MaxRunningRequests int `yaml:"max_running_requests" json:"max_running_requests"`
+	MaxTotalTokens     int `yaml:"max_total_tokens" json:"max_total_tokens"`
+	ContextLength      int `yaml:"context_length" json:"context_length"`
+
+	// Memory settings
+	MemFractionStatic   float64 `yaml:"mem_fraction_static" json:"mem_fraction_static"`
+	ChunkedPrefillSize  int     `yaml:"chunked_prefill_size" json:"chunked_prefill_size"`
+
+	// Scheduling and caching
+	SchedulePolicy    string `yaml:"schedule_policy" json:"schedule_policy"`
+	KVCacheDtype      string `yaml:"kv_cache_dtype" json:"kv_cache_dtype"`
+	AttentionBackend  string `yaml:"attention_backend" json:"attention_backend"`
+	DisableRadixCache bool   `yaml:"disable_radix_cache" json:"disable_radix_cache"`
+
+	// Model settings
+	ReasoningParser string `yaml:"reasoning_parser" json:"reasoning_parser"`
+	TrustRemoteCode bool   `yaml:"trust_remote_code" json:"trust_remote_code"`
+	LogLevel        string `yaml:"log_level" json:"log_level"`
+}
+
+// DefaultSGLangConfig returns default SGLang configuration
+func DefaultSGLangConfig() SGLangConfig {
+	return SGLangConfig{
+		Enabled:            false,
+		Image:              "lmsysorg/sglang:latest",
+		ContainerName:      "silo-inference",
+		Port:               30000,
+		GPUDevices:         []string{"0", "1", "2"},
+		ShmSize:            "64g",
+		ModelPath:          "/root/data/AWQ",
+		HuggingFaceCache:   "~/.cache/huggingface",
+		DPSize:             3,
+		TPSize:             1,
+		MaxRunningRequests: 32,
+		MaxTotalTokens:     262144,
+		ContextLength:      131072,
+		MemFractionStatic:  0.88,
+		ChunkedPrefillSize: 8192,
+		SchedulePolicy:     "fcfs",
+		KVCacheDtype:       "fp8_e4m3",
+		AttentionBackend:   "flashinfer",
+		DisableRadixCache:  true,
+		ReasoningParser:    "glm45",
+		TrustRemoteCode:    true,
+		LogLevel:           "info",
+	}
+}
 
 type Config struct {
 	Version      string `yaml:"version"`
@@ -77,13 +142,19 @@ type Config struct {
 	DeepResearchPort  int    `yaml:"deep_research_port"`
 	SearchProvider    string `yaml:"search_provider"`
 	PerplexityAPIKey  string `yaml:"perplexity_api_key"`
+
+	// SGLang inference engine (managed separately from docker-compose)
+	SGLang SGLangConfig `yaml:"sglang"`
 }
 
 type State struct {
-	Version     string `json:"version"`
-	InstalledAt string `json:"installed_at"`
-	LastUpdated string `json:"last_updated"`
+	Version              string `json:"version"`
+	InstalledAt          string `json:"installed_at"`
+	LastUpdated          string `json:"last_updated"`
+	InferenceWasRunning  bool   `json:"inference_was_running"`
 }
+
+
 
 func NewDefaultConfig(paths *Paths) *Config {
 	return &Config{
@@ -120,6 +191,9 @@ func NewDefaultConfig(paths *Paths) *Config {
 		DeepResearchPort:  DefaultDeepResearchPort,
 		SearchProvider:    DefaultSearchProvider,
 		PerplexityAPIKey:  DefaultPerplexityAPIKey,
+
+		// SGLang inference engine
+		SGLang: DefaultSGLangConfig(),
 	}
 }
 

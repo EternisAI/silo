@@ -10,6 +10,7 @@ import (
 
 	"github.com/eternisai/silo/internal/config"
 	"github.com/eternisai/silo/internal/docker"
+	"github.com/eternisai/silo/internal/inference"
 	"github.com/eternisai/silo/internal/version"
 	"github.com/eternisai/silo/pkg/logger"
 )
@@ -202,4 +203,9 @@ type Status struct {
 	Containers    []docker.Container
 	CLIVersion    *version.VersionInfo
 	ImageVersions []version.ImageVersionInfo
+}
+
+// getInferenceEngine returns an inference engine manager
+func (d *Daemon) getInferenceEngine() *inference.Engine {
+	return inference.New(d.config, d.logger)
 }

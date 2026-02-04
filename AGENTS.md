@@ -27,13 +27,13 @@ CLI (cmd/silo)                     Daemon (cmd/silod)
        │                                  │
        ├─ up/down/status/logs            ├─ /health
        ├─ upgrade/check/version          ├─ /status
-       │                                  ├─ /api/v1/up
-       └─ Installer/Docker/Updater       ├─ /api/v1/down
-                                          ├─ /api/v1/restart
-                                          ├─ /api/v1/upgrade
-                                          ├─ /api/v1/logs
-                                          ├─ /api/v1/version
-                                          └─ /api/v1/check
+       ├─ inference up/down/status       ├─ /api/v1/up, /api/v1/down, /api/v1/restart
+       │                                  ├─ /api/v1/upgrade, /api/v1/logs, /api/v1/version
+       └─ Installer/Docker/Updater       ├─ /api/v1/check
+                                          ├─ /api/v1/inference/up
+                                          ├─ /api/v1/inference/down
+                                          ├─ /api/v1/inference/status
+                                          └─ /api/v1/inference/logs
 ```
 
 ## Project Structure
@@ -50,13 +50,17 @@ silo/
 │   │
 │   ├── cli/
 │   │   ├── root.go          # Cobra root command + global flags
-│   │   ├── up.go            # Install or start services
-│   │   ├── down.go          # Stop services
-│   │   ├── status.go        # Show service status
+│   │   ├── up.go            # Install or start services (--all includes inference)
+│   │   ├── down.go          # Stop services (--all includes inference)
+│   │   ├── status.go        # Show service status (includes inference engine)
 │   │   ├── logs.go          # View container logs
 │   │   ├── upgrade.go       # Pull latest images and recreate
 │   │   ├── check.go         # Validate config + installation
-│   │   └── version.go       # Show versions + check for updates
+│   │   ├── version.go       # Show versions + check for updates
+│   │   └── inference.go     # Inference engine commands (up/down/status/logs)
+│   │
+│   ├── inference/
+│   │   └── inference.go     # SGLang inference engine management (docker run)
 │   │
 │   ├── daemon/
 │   │   ├── daemon.go        # Daemon lifecycle and configuration
@@ -100,12 +104,18 @@ silo/
 | Command | File | Description | Key Logic |
 |---------|------|-------------|-----------|
 | `silo up` | up.go | Install or start | Check state.json → installer if new, else docker up |
-| `silo down` | down.go | Stop services | Docker compose down (preserve volumes) |
-| `silo status` | status.go | Service status | Parse docker ps output |
+| `silo up --all` | up.go | Include inference engine | Also starts SGLang inference container |
+| `silo down` | down.go | Stop services | Docker compose down (preserve volumes), excludes inference |
+| `silo down --all` | down.go | Include inference engine | Also stops SGLang inference container |
+| `silo status` | status.go | Service status | Parse docker ps + inference engine status |
 | `silo logs` | logs.go | Container logs | Docker compose logs with -f/--tail |
-| `silo upgrade` | upgrade.go | Update images | Backup → pull → down → up → update state |
+| `silo upgrade` | upgrade.go | Update images | Backup → pull → down → up (never touches inference) |
 | `silo check` | check.go | Validate config | YAML validation + file existence checks |
 | `silo version` | version.go | Show versions | Local version + GitHub/Docker Hub API calls |
+| `silo inference up` | inference.go | Start inference | docker run sglang container |
+| `silo inference down` | inference.go | Stop inference | docker stop/rm sglang container |
+| `silo inference status` | inference.go | Inference status | Container info + health check |
+| `silo inference logs` | inference.go | Inference logs | docker logs with -f/--tail |
 
 ### 2. Configuration Management (`internal/config/`)
 
@@ -338,6 +348,8 @@ sudo systemctl start silod
 - `/status` - Detailed daemon status
 - `/api/v1/up`, `/api/v1/down`, `/api/v1/restart` - Container control
 - `/api/v1/upgrade`, `/api/v1/logs`, `/api/v1/version`, `/api/v1/check` - Operations
+- `/api/v1/inference/up`, `/api/v1/inference/down` - Inference engine control
+- `/api/v1/inference/status`, `/api/v1/inference/logs` - Inference engine info
 
 **Environment Variables:**
 - `SILO_CONFIG_DIR` - Override config directory (default: `~/.config/silo`)

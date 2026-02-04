@@ -366,6 +366,158 @@ func (s *Server) handleCheck(w http.ResponseWriter, r *http.Request) {
 	s.respondWithLogs(w, http.StatusOK, true, "Configuration is valid", "", "", apiLog.GetLogs())
 }
 
+// handleInferenceUp handles POST /api/v1/inference/up - start inference engine
+func (s *Server) handleInferenceUp(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		s.respondError(w, http.StatusMethodNotAllowed, "Method not allowed", "")
+		return
+	}
+
+	// Acquire operation lock
+	s.daemon.opLock.Lock()
+	defer s.daemon.opLock.Unlock()
+
+	apiLog := NewAPILogger()
+	apiLog.Info("Starting inference engine...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), UpTimeout)
+	defer cancel()
+
+	engine := s.daemon.getInferenceEngine()
+	if err := engine.Up(ctx); err != nil {
+		apiLog.Error("Failed to start inference engine: %v", err)
+		s.respondWithLogs(w, http.StatusInternalServerError, false, "",
+			fmt.Sprintf("Failed to start inference engine: %v", err), "", apiLog.GetLogs())
+		return
+	}
+
+	// Update state to track that inference was running
+	s.daemon.state.InferenceWasRunning = true
+	if err := config.SaveState(s.daemon.paths.StateFile, s.daemon.state); err != nil {
+		s.daemon.logger.Warn("Failed to save state: %v", err)
+	}
+
+	apiLog.Success("Inference engine started successfully")
+	s.respondWithLogs(w, http.StatusOK, true, "Inference engine started successfully", "", "", apiLog.GetLogs())
+}
+
+// handleInferenceDown handles POST /api/v1/inference/down - stop inference engine
+func (s *Server) handleInferenceDown(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		s.respondError(w, http.StatusMethodNotAllowed, "Method not allowed", "")
+		return
+	}
+
+	// Acquire operation lock
+	s.daemon.opLock.Lock()
+	defer s.daemon.opLock.Unlock()
+
+	apiLog := NewAPILogger()
+	apiLog.Info("Stopping inference engine...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), DownTimeout)
+	defer cancel()
+
+	engine := s.daemon.getInferenceEngine()
+	if err := engine.Down(ctx); err != nil {
+		apiLog.Error("Failed to stop inference engine: %v", err)
+		s.respondWithLogs(w, http.StatusInternalServerError, false, "",
+			fmt.Sprintf("Failed to stop inference engine: %v", err), "", apiLog.GetLogs())
+		return
+	}
+
+	// Update state to track that inference was stopped
+	s.daemon.state.InferenceWasRunning = false
+	if err := config.SaveState(s.daemon.paths.StateFile, s.daemon.state); err != nil {
+		s.daemon.logger.Warn("Failed to save state: %v", err)
+	}
+
+	apiLog.Success("Inference engine stopped successfully")
+	s.respondWithLogs(w, http.StatusOK, true, "Inference engine stopped successfully", "", "", apiLog.GetLogs())
+}
+
+// handleInferenceStatus handles GET /api/v1/inference/status - get inference engine status
+func (s *Server) handleInferenceStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		s.respondError(w, http.StatusMethodNotAllowed, "Method not allowed", "")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	engine := s.daemon.getInferenceEngine()
+	info, err := engine.Status(ctx)
+	if err != nil {
+		s.respondError(w, http.StatusInternalServerError,
+			"Failed to get inference engine status", err.Error())
+		return
+	}
+
+	// Try health check
+	healthy := false
+	if info.Running {
+		if err := engine.HealthCheck(ctx); err == nil {
+			healthy = true
+		}
+	}
+
+	data := map[string]interface{}{
+		"name":    info.Name,
+		"state":   info.State,
+		"status":  info.Status,
+		"image":   info.Image,
+		"running": info.Running,
+		"healthy": healthy,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(APIResponse{
+		Success: true,
+		Message: "Inference engine status retrieved",
+		Data:    data,
+	})
+}
+
+// handleInferenceLogs handles GET /api/v1/inference/logs - get inference engine logs
+func (s *Server) handleInferenceLogs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		s.respondError(w, http.StatusMethodNotAllowed, "Method not allowed", "")
+		return
+	}
+
+	// Parse query parameters
+	linesStr := r.URL.Query().Get("lines")
+	lines := 100 // default
+	if linesStr != "" {
+		if n, err := strconv.Atoi(linesStr); err == nil && n > 0 {
+			if n > MaxLogLines {
+				lines = MaxLogLines
+			} else {
+				lines = n
+			}
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), LogsTimeout)
+	defer cancel()
+
+	engine := s.daemon.getInferenceEngine()
+	logs, err := engine.LogsBuffer(ctx, lines)
+	if err != nil {
+		s.respondError(w, http.StatusInternalServerError,
+			"Failed to get inference engine logs", err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(APIResponse{
+		Success: true,
+		Message: "Inference engine logs retrieved",
+		Data:    map[string]string{"logs": logs},
+	})
+}
+
 // respondError sends an error response
 func (s *Server) respondError(w http.ResponseWriter, status int, error, details string) {
 	w.Header().Set("Content-Type", "application/json")

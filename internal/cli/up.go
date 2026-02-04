@@ -6,9 +6,12 @@ import (
 
 	"github.com/eternisai/silo/internal/config"
 	"github.com/eternisai/silo/internal/docker"
+	"github.com/eternisai/silo/internal/inference"
 	"github.com/eternisai/silo/internal/installer"
 	"github.com/spf13/cobra"
 )
+
+var upAll bool
 
 var upCmd = &cobra.Command{
 	Use:   "up",
@@ -17,7 +20,9 @@ var upCmd = &cobra.Command{
 
 This command will:
   - First run: perform full installation
-  - Subsequent runs: start existing containers`,
+  - Subsequent runs: start existing containers
+
+By default, the inference engine is NOT started. Use --all to include it.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		paths := config.NewPaths(configDir, "")
@@ -45,6 +50,13 @@ This command will:
 			if err := inst.Install(ctx); err != nil {
 				log.Error("Installation failed: %v", err)
 				return err
+			}
+
+			// Start inference engine if --all flag is set
+			if upAll {
+				if err := startInferenceEngine(ctx, cfg, paths); err != nil {
+					return err
+				}
 			}
 
 			return nil
@@ -80,8 +92,37 @@ This command will:
 		}
 
 		log.Success("Silo is running")
+
+		// Start inference engine if --all flag is set
+		if upAll {
+			if err := startInferenceEngine(ctx, cfg, paths); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	},
+}
+
+func startInferenceEngine(ctx context.Context, cfg *config.Config, paths *config.Paths) error {
+	log.Info("Starting inference engine...")
+	engine := inference.New(cfg, log)
+	if err := engine.Up(ctx); err != nil {
+		log.Error("Failed to start inference engine: %v", err)
+		return err
+	}
+
+	// Update state to track that inference was running
+	state, _ := config.LoadState(paths.StateFile)
+	if state == nil {
+		state = &config.State{}
+	}
+	state.InferenceWasRunning = true
+	if err := config.SaveState(paths.StateFile, state); err != nil {
+		log.Warn("Failed to save state: %v", err)
+	}
+
+	return nil
 }
 
 func init() {
@@ -91,4 +132,5 @@ func init() {
 	upCmd.Flags().IntVar(&port, "port", config.DefaultPort, "Application port (first install only)")
 	upCmd.Flags().BoolVar(&enableInferenceEngine, "enable-inference-engine", config.DefaultEnableInferenceEngine, "Enable local inference engine (first install only)")
 	upCmd.Flags().BoolVar(&enableProxyAgent, "enable-proxy-agent", config.DefaultEnableProxyAgent, "Enable proxy agent (first install only)")
+	upCmd.Flags().BoolVar(&upAll, "all", false, "Include inference engine")
 }

@@ -50,6 +50,12 @@ func (s *Server) Start(ctx context.Context) error {
 	mux.HandleFunc("/api/v1/version", s.handleVersion)
 	mux.HandleFunc("/api/v1/check", s.handleCheck)
 
+	// Register inference engine API handlers
+	mux.HandleFunc("/api/v1/inference/up", s.handleInferenceUp)
+	mux.HandleFunc("/api/v1/inference/down", s.handleInferenceDown)
+	mux.HandleFunc("/api/v1/inference/status", s.handleInferenceStatus)
+	mux.HandleFunc("/api/v1/inference/logs", s.handleInferenceLogs)
+
 	s.server = &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", s.bindAddr, s.port),
 		Handler:      s.loggingMiddleware(mux),
