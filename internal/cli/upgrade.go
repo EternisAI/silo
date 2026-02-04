@@ -139,7 +139,10 @@ This command will:
 			}
 		}
 
-		if !anyImageUpdates {
+		// Check if deep research image needs update
+		deepResearchNeedsUpdate := cfg.DeepResearchImage != config.DefaultDeepResearchImage
+
+		if !anyImageUpdates && !deepResearchNeedsUpdate {
 			if !upgradeJSONOutput {
 				log.Info("")
 				log.Success("All services are already up to date. No upgrade needed.")
