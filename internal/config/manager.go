@@ -37,7 +37,7 @@ const (
 	DefaultEnableDeepResearch    = true
 
 	// Deep research defaults
-	DefaultDeepResearchImage    = "ghcr.io/eternisai/deep_research:sha-ff37ec2"
+	DefaultDeepResearchImage    = "ghcr.io/eternisai/deep_research:sha-2e9f2ef"
 	DefaultDeepResearchPort     = 3031
 	DefaultSearchProvider       = "perplexity"
 	DefaultPerplexityAPIKey     = ""
