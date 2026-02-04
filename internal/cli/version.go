@@ -104,7 +104,7 @@ var versionCmd = &cobra.Command{
 			if output.Latest != nil {
 				if output.Latest.NeedsUpdate {
 					fmt.Printf("⚠ New CLI version available: %s (current: %s)\n", output.Latest.Latest, output.Latest.Current)
-					fmt.Printf("Run 'silo upgrade' to update\n")
+					fmt.Printf("Run 'silo upgrade-cli' to update\n")
 					fmt.Printf("Release notes: %s\n", output.Latest.UpdateURL)
 					fmt.Println()
 				} else {
