@@ -207,142 +207,40 @@ func (e *Engine) getImage() string {
 
 // buildDockerRunArgs builds the docker run command arguments
 func (e *Engine) buildDockerRunArgs() []string {
-	cfg := e.cfg.SGLang
-
-	args := []string{
+	return []string{
 		"run", "-d",
 		"--name", e.getContainerName(),
 		"--restart", "unless-stopped",
-	}
-
-	// GPU configuration (required for SGLang)
-	// Note: Docker requires quotes around device list: "device=0,1,2"
-	if len(cfg.GPUDevices) > 0 {
-		gpuDevices := strings.Join(cfg.GPUDevices, ",")
-		args = append(args, "--gpus", fmt.Sprintf(`"device=%s"`, gpuDevices))
-	} else {
-		args = append(args, "--gpus", "all")
-	}
-
-	// Memory and IPC settings
-	if cfg.ShmSize != "" {
-		args = append(args, "--shm-size", cfg.ShmSize)
-	}
-	args = append(args, "--ipc=host")
-
-	// Ulimits
-	args = append(args,
+		"--gpus", `"device=0,1,2"`,
+		"--shm-size", "64g",
+		"--ipc=host",
 		"--ulimit", "memlock=-1:-1",
 		"--ulimit", "nofile=1048576:1048576",
-	)
-
-	// Port
-	port := cfg.Port
-	if port == 0 {
-		port = 30000
-	}
-	args = append(args, "-p", fmt.Sprintf("%d:%d", port, port))
-
-	// Environment variables
-	if len(cfg.GPUDevices) > 0 {
-		args = append(args, "-e", fmt.Sprintf("CUDA_VISIBLE_DEVICES=%s", strings.Join(cfg.GPUDevices, ",")))
-	}
-	args = append(args, "-e", "PYTORCH_ALLOC_CONF=expandable_segments:True")
-
-	// Volume mounts
-	if cfg.ModelPath != "" {
-		args = append(args, "-v", fmt.Sprintf("%s:/workspace/model", cfg.ModelPath))
-	}
-	if cfg.HuggingFaceCache != "" {
-		args = append(args, "-v", fmt.Sprintf("%s:/root/.cache/huggingface", cfg.HuggingFaceCache))
-	}
-
-	// Image
-	args = append(args, e.getImage())
-
-	// SGLang command
-	sglangArgs := e.buildSGLangArgs()
-	args = append(args, sglangArgs...)
-
-	return args
-}
-
-// buildSGLangArgs builds the sglang launch server arguments
-func (e *Engine) buildSGLangArgs() []string {
-	cfg := e.cfg.SGLang
-
-	args := []string{
+		"-p", "30000:30000",
+		"-e", "CUDA_VISIBLE_DEVICES=0,1,2",
+		"-e", "PYTORCH_ALLOC_CONF=expandable_segments:True",
+		"-v", "/root/data/AWQ:/workspace/model",
+		"-v", "/root/.cache/huggingface:/root/.cache/huggingface",
+		"lmsysorg/sglang:latest",
 		"python3", "-m", "sglang.launch_server",
 		"--model-path", "/workspace/model",
 		"--host", "0.0.0.0",
-		"--port", fmt.Sprintf("%d", cfg.Port),
+		"--port", "30000",
+		"--dp-size", "3",
+		"--tp-size", "1",
+		"--max-running-requests", "32",
+		"--max-total-tokens", "262144",
+		"--context-length", "131072",
+		"--mem-fraction-static", "0.88",
+		"--chunked-prefill-size", "8192",
+		"--schedule-policy", "fcfs",
+		"--kv-cache-dtype", "fp8_e4m3",
+		"--attention-backend", "flashinfer",
+		"--disable-radix-cache",
+		"--reasoning-parser", "glm45",
+		"--trust-remote-code",
+		"--log-level", "info",
 	}
-
-	// Parallelism settings
-	if cfg.DPSize > 0 {
-		args = append(args, "--dp-size", fmt.Sprintf("%d", cfg.DPSize))
-	}
-	if cfg.TPSize > 0 {
-		args = append(args, "--tp-size", fmt.Sprintf("%d", cfg.TPSize))
-	}
-
-	// Request limits
-	if cfg.MaxRunningRequests > 0 {
-		args = append(args, "--max-running-requests", fmt.Sprintf("%d", cfg.MaxRunningRequests))
-	}
-	if cfg.MaxTotalTokens > 0 {
-		args = append(args, "--max-total-tokens", fmt.Sprintf("%d", cfg.MaxTotalTokens))
-	}
-	if cfg.ContextLength > 0 {
-		args = append(args, "--context-length", fmt.Sprintf("%d", cfg.ContextLength))
-	}
-
-	// Memory settings
-	if cfg.MemFractionStatic > 0 {
-		args = append(args, "--mem-fraction-static", fmt.Sprintf("%.2f", cfg.MemFractionStatic))
-	}
-	if cfg.ChunkedPrefillSize > 0 {
-		args = append(args, "--chunked-prefill-size", fmt.Sprintf("%d", cfg.ChunkedPrefillSize))
-	}
-
-	// Scheduling
-	if cfg.SchedulePolicy != "" {
-		args = append(args, "--schedule-policy", cfg.SchedulePolicy)
-	}
-
-	// KV cache
-	if cfg.KVCacheDtype != "" {
-		args = append(args, "--kv-cache-dtype", cfg.KVCacheDtype)
-	}
-
-	// Attention backend
-	if cfg.AttentionBackend != "" {
-		args = append(args, "--attention-backend", cfg.AttentionBackend)
-	}
-
-	// Flags
-	if cfg.DisableRadixCache {
-		args = append(args, "--disable-radix-cache")
-	}
-
-	// Reasoning parser
-	if cfg.ReasoningParser != "" {
-		args = append(args, "--reasoning-parser", cfg.ReasoningParser)
-	}
-
-	// Trust remote code
-	if cfg.TrustRemoteCode {
-		args = append(args, "--trust-remote-code")
-	}
-
-	// Log level
-	logLevel := cfg.LogLevel
-	if logLevel == "" {
-		logLevel = "info"
-	}
-	args = append(args, "--log-level", logLevel)
-
-	return args
 }
 
 // GetDockerRunCommand returns the full docker run command for debugging

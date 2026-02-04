@@ -241,12 +241,25 @@ func mergeConfigs(existing, defaults *Config) *Config {
 	defaultsVal := reflect.ValueOf(defaults).Elem()
 	resultVal := reflect.ValueOf(result).Elem()
 
-	for i := 0; i < existingVal.NumField(); i++ {
-		existingField := existingVal.Field(i)
-		defaultField := defaultsVal.Field(i)
-		resultField := resultVal.Field(i)
+	mergeStructFields(existingVal, defaultsVal, resultVal)
+
+	return result
+}
+
+// mergeStructFields recursively merges struct fields
+func mergeStructFields(existing, defaults, result reflect.Value) {
+	for i := 0; i < existing.NumField(); i++ {
+		existingField := existing.Field(i)
+		defaultField := defaults.Field(i)
+		resultField := result.Field(i)
 
 		if !resultField.CanSet() {
+			continue
+		}
+
+		// For nested structs, merge fields recursively
+		if existingField.Kind() == reflect.Struct {
+			mergeStructFields(existingField, defaultField, resultField)
 			continue
 		}
 
@@ -256,8 +269,6 @@ func mergeConfigs(existing, defaults *Config) *Config {
 			resultField.Set(existingField)
 		}
 	}
-
-	return result
 }
 
 // isZeroValue checks if a reflect.Value is the zero value for its type
@@ -271,8 +282,12 @@ func isZeroValue(v reflect.Value) bool {
 		return !v.Bool()
 	case reflect.Float32, reflect.Float64:
 		return v.Float() == 0
+	case reflect.Struct:
+		return v.IsZero()
+	case reflect.Slice, reflect.Map:
+		return v.IsNil() || v.Len() == 0
 	default:
-		return false
+		return v.IsZero()
 	}
 }
 
