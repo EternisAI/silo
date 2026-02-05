@@ -32,7 +32,7 @@ func (l *Logger) Success(msg string, args ...interface{}) {
 		return
 	}
 	green := color.New(color.FgGreen).SprintfFunc()
-	fmt.Fprintf(os.Stdout, green("✓ "+msg+"\n", args...))
+	fmt.Fprint(os.Stdout, green("✓ "+msg+"\n", args...))
 }
 
 func (l *Logger) Warn(msg string, args ...interface{}) {
@@ -40,7 +40,7 @@ func (l *Logger) Warn(msg string, args ...interface{}) {
 		return
 	}
 	yellow := color.New(color.FgYellow).SprintfFunc()
-	fmt.Fprintf(os.Stderr, yellow("⚠ "+msg+"\n", args...))
+	fmt.Fprint(os.Stderr, yellow("⚠ "+msg+"\n", args...))
 }
 
 func (l *Logger) Error(msg string, args ...interface{}) {
@@ -48,7 +48,7 @@ func (l *Logger) Error(msg string, args ...interface{}) {
 		return
 	}
 	red := color.New(color.FgRed).SprintfFunc()
-	fmt.Fprintf(os.Stderr, red("✗ "+msg+"\n", args...))
+	fmt.Fprint(os.Stderr, red("✗ "+msg+"\n", args...))
 }
 
 func (l *Logger) Debug(msg string, args ...interface{}) {
@@ -57,6 +57,6 @@ func (l *Logger) Debug(msg string, args ...interface{}) {
 	}
 	if l.verbose {
 		cyan := color.New(color.FgCyan).SprintfFunc()
-		fmt.Fprintf(os.Stdout, cyan("[DEBUG] "+msg+"\n", args...))
+		fmt.Fprint(os.Stdout, cyan("[DEBUG] "+msg+"\n", args...))
 	}
 }
