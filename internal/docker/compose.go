@@ -54,11 +54,30 @@ func Down(ctx context.Context, composePath string, removeVolumes bool) error {
 	return nil
 }
 
-func Pull(ctx context.Context, composePath string) error {
+// PullResult contains the result of pulling a service image
+type PullResult struct {
+	Service string
+	Error   error
+}
+
+// Pull pulls images for the given services, or default services if none specified.
+// Returns results for each service attempted.
+func Pull(ctx context.Context, composePath string, services ...string) []PullResult {
+	if len(services) == 0 {
+		services = []string{"backend", "frontend"}
+	}
+
+	var results []PullResult
+	for _, service := range services {
+		err := pullService(ctx, composePath, service)
+		results = append(results, PullResult{Service: service, Error: err})
+	}
+	return results
+}
+
+func pullService(ctx context.Context, composePath string, service string) error {
 	composeCmd := GetComposeCommand()
-	services := []string{"backend", "frontend"}
-	args := append(composeCmd[1:], "-f", composePath, "pull")
-	args = append(args, services...)
+	args := append(composeCmd[1:], "-f", composePath, "pull", service)
 
 	cmd := exec.CommandContext(ctx, composeCmd[0], args...)
 	cmd.Stdout = os.Stdout
@@ -66,7 +85,7 @@ func Pull(ctx context.Context, composePath string) error {
 	cmd.Dir = filepath.Dir(composePath)
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to pull images: %w", err)
+		return fmt.Errorf("failed to pull %s: %w", service, err)
 	}
 	return nil
 }
