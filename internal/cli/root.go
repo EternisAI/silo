@@ -9,13 +9,12 @@ import (
 )
 
 var (
-	verbose               bool
-	configDir             string
-	imageTag              string
-	port                  int
-	enableInferenceEngine bool
-	enableProxyAgent      bool
-	log                   *logger.Logger
+	verbose          bool
+	configDir        string
+	imageTag         string
+	port             int
+	enableProxyAgent bool
+	log              *logger.Logger
 )
 
 var rootCmd = &cobra.Command{
