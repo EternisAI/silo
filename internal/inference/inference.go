@@ -197,14 +197,6 @@ func (e *Engine) getContainerName() string {
 	return DefaultContainerName
 }
 
-// getImage returns the image from config or default
-func (e *Engine) getImage() string {
-	if e.cfg.SGLang.Image != "" {
-		return e.cfg.SGLang.Image
-	}
-	return DefaultImage
-}
-
 // buildDockerRunArgs builds the docker run command arguments
 func (e *Engine) buildDockerRunArgs() []string {
 	return []string{
