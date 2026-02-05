@@ -244,7 +244,7 @@ enable_proxy_agent: false              # Enable remote proxy agent
 enable_deep_research: true             # Enable deep research service
 
 # Deep research configuration
-deep_research_image: "ghcr.io/eternisai/deep_research:sha-ff37ec2"
+deep_research_image: "ghcr.io/eternisai/deep_research:sha-XXXXXXX"  # See manager.go for current default
 deep_research_port: 3031
 search_provider: "perplexity"
 perplexity_api_key: ""                 # Required for deep research web search

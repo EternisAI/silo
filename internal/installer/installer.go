@@ -122,11 +122,36 @@ func (i *Installer) generateConfigs() error {
 func (i *Installer) pullImages(ctx context.Context) error {
 	i.logger.Info("Pulling Docker images...")
 
-	if err := docker.Pull(ctx, i.paths.ComposeFile); err != nil {
-		return err
+	// Determine which services to pull
+	services := []string{"backend", "frontend"}
+	if i.config.EnableDeepResearch {
+		services = append(services, "deep-research")
 	}
 
-	i.logger.Success("Docker images pulled")
+	// Pull each service, tracking failures
+	results := docker.Pull(ctx, i.paths.ComposeFile, services...)
+
+	var failed []string
+	for _, r := range results {
+		if r.Error != nil {
+			i.logger.Warn("Failed to pull %s: %v", r.Service, r.Error)
+			failed = append(failed, r.Service)
+		} else {
+			i.logger.Success("Pulled %s", r.Service)
+		}
+	}
+
+	// Fail only if critical services (backend/frontend) failed
+	for _, f := range failed {
+		if f == "backend" || f == "frontend" {
+			return fmt.Errorf("failed to pull critical service: %s", f)
+		}
+	}
+
+	if len(failed) > 0 {
+		i.logger.Warn("Some non-critical images failed to pull, continuing anyway")
+	}
+
 	return nil
 }
 

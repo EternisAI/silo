@@ -266,7 +266,7 @@ func (s *Server) handleLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(APIResponse{
+	_ = json.NewEncoder(w).Encode(APIResponse{
 		Success: true,
 		Message: "Logs command executed (output sent to stdout)",
 		Data:    map[string]interface{}{"note": "Logs are output to stdout, not captured in API response"},
@@ -313,7 +313,7 @@ func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(APIResponse{
+	_ = json.NewEncoder(w).Encode(APIResponse{
 		Success: true,
 		Message: "Version information retrieved",
 		Data:    data,
@@ -522,7 +522,7 @@ func (s *Server) handleInferenceLogs(w http.ResponseWriter, r *http.Request) {
 func (s *Server) respondError(w http.ResponseWriter, status int, error, details string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(APIResponse{
+	_ = json.NewEncoder(w).Encode(APIResponse{
 		Success: false,
 		Error:   error,
 		Details: details,
@@ -533,7 +533,7 @@ func (s *Server) respondError(w http.ResponseWriter, status int, error, details 
 func (s *Server) respondWithLogs(w http.ResponseWriter, status int, success bool, message, error, details string, logs []LogEntry) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(APIResponse{
+	_ = json.NewEncoder(w).Encode(APIResponse{
 		Success: success,
 		Message: message,
 		Error:   error,
