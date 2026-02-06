@@ -21,6 +21,9 @@ const (
 	DefaultEnableProxyAgent   = false
 	DefaultEnableDeepResearch = true
 
+	// Proxy agent defaults
+	DefaultProxyServerURL = "ballast.proxy.rlwy.net:16587"
+
 	// Deep research defaults
 	DefaultDeepResearchImage    = "ghcr.io/eternisai/deep_research:sha-2e9f2ef"
 	DefaultDeepResearchPort     = 3031
@@ -107,6 +110,9 @@ type Config struct {
 	EnableProxyAgent   bool `yaml:"enable_proxy_agent"`
 	EnableDeepResearch bool `yaml:"enable_deep_research"`
 
+	// Proxy agent configuration
+	ProxyServerURL string `yaml:"proxy_server_url"`
+
 	// Deep research configuration
 	DeepResearchImage string `yaml:"deep_research_image"`
 	DeepResearchPort  int    `yaml:"deep_research_port"`
@@ -140,6 +146,9 @@ func NewDefaultConfig(paths *Paths) *Config {
 		// Service toggles
 		EnableProxyAgent:   DefaultEnableProxyAgent,
 		EnableDeepResearch: DefaultEnableDeepResearch,
+
+		// Proxy agent defaults
+		ProxyServerURL: DefaultProxyServerURL,
 
 		// Deep research defaults
 		DeepResearchImage: DefaultDeepResearchImage,
@@ -305,6 +314,14 @@ func Validate(config *Config) error {
 	if config.DefaultModel == "" {
 		return fmt.Errorf("default_model cannot be empty")
 	}
+
+	// Proxy agent validation (only when enabled)
+	if config.EnableProxyAgent {
+		if config.ProxyServerURL == "" {
+			return fmt.Errorf("proxy_server_url cannot be empty when proxy agent is enabled")
+		}
+	}
+
 
 	return nil
 }

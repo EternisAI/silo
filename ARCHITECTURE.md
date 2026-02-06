@@ -56,10 +56,15 @@ Both share internal packages while serving different purposes.
 ├───────────────────────────────────────────────────────────────────┤
 │                                                                   │
 │  docker-compose.yml                                              │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌───────────┐ │
-│  │  postgres  │  │  backend   │  │  frontend  │  │ inference │ │
-│  │  :5432     │  │  :8080     │  │  :80       │  │ :30000    │ │
-│  └────────────┘  └────────────┘  └────────────┘  └───────────┘ │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌─────────────┐│
+│  │  postgres  │  │  backend   │  │  frontend  │  │deep-research││
+│  │  :5432     │  │  :8080     │  │  :80       │  │  :3031      ││
+│  └────────────┘  └────────────┘  └────────────┘  └─────────────┘│
+│                                                                   │
+│  Standalone (docker run, not Compose):                           │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  SGLang Inference Engine  :30000                          │  │
+│  └───────────────────────────────────────────────────────────┘  │
 │                                                                   │
 └───────────────────────────────────────────────────────────────────┘
 ```
@@ -389,3 +394,36 @@ sudo systemctl start silod
 3. **Independent Operation**: CLI and daemon work independently
 4. **Optional Integration**: Daemon is optional; CLI fully functional alone
 5. **Graceful Degradation**: Failures in daemon don't affect CLI operations
+
+## Deep Research Service Deployment
+
+The deep research service has a different deployment model than frontend/backend:
+
+| Aspect | Frontend / Backend | Deep Research |
+|--------|-------------------|---------------|
+| **Registry** | Docker Hub (`eternis/silo-box-*`) | GHCR (`ghcr.io/eternisai/deep_research`) |
+| **Versioning** | Semantic versioning (`0.1.2`) | Commit SHA tags (`sha-2e9f2ef`) |
+| **Update Source** | CLI queries Docker Hub API for latest | Version pinned in CLI source code |
+| **Pull Criticality** | Critical (blocks upgrade on failure) | Non-critical (warns but continues) |
+
+### Update Flow
+
+1. Push changes to `silo_deep_research` repo
+2. GitHub Actions builds and pushes image to GHCR with `sha-{commit}` tag
+3. Update `DefaultDeepResearchImage` constant in `internal/config/manager.go`
+4. Release new CLI version (`gh workflow run Release`)
+5. Users run `silo upgrade` to get new image
+
+### GHCR Authentication
+
+If the deep research image is private, users need GHCR auth:
+
+```bash
+# Create PAT (classic) with read:packages scope
+# If org uses SAML SSO, authorize PAT for the org
+echo "YOUR_PAT" | docker login ghcr.io -u YOUR_USERNAME --password-stdin
+```
+
+### Graceful Pull Handling
+
+The CLI pulls services individually. If deep research fails to pull (auth issues), the CLI logs a warning but continues deploying frontend/backend. This prevents GHCR auth problems from blocking critical services.

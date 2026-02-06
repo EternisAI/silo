@@ -131,11 +131,36 @@ func (u *Updater) updateConfigWithLatestVersion(ctx context.Context) (string, er
 func (u *Updater) pullImages(ctx context.Context) error {
 	u.logger.Info("Pulling latest Docker images...")
 
-	if err := docker.Pull(ctx, u.paths.ComposeFile); err != nil {
-		return err
+	// Determine which services to pull
+	services := []string{"backend", "frontend"}
+	if u.config.EnableDeepResearch {
+		services = append(services, "deep-research")
 	}
 
-	u.logger.Success("Docker images pulled")
+	// Pull each service, tracking failures
+	results := docker.Pull(ctx, u.paths.ComposeFile, services...)
+
+	var failed []string
+	for _, r := range results {
+		if r.Error != nil {
+			u.logger.Warn("Failed to pull %s: %v", r.Service, r.Error)
+			failed = append(failed, r.Service)
+		} else {
+			u.logger.Success("Pulled %s", r.Service)
+		}
+	}
+
+	// Fail only if critical services (backend/frontend) failed
+	for _, f := range failed {
+		if f == "backend" || f == "frontend" {
+			return fmt.Errorf("failed to pull critical service: %s", f)
+		}
+	}
+
+	if len(failed) > 0 {
+		u.logger.Warn("Some non-critical images failed to pull, continuing anyway")
+	}
+
 	return nil
 }
 
