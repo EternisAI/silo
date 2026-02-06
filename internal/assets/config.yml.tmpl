@@ -6,21 +6,43 @@ port: {{.Port}}
 llm_base_url: "{{.LLMBaseURL}}"
 default_model: "{{.DefaultModel}}"
 
-# Inference Engine Configuration
-inference_port: {{.InferencePort}}
-inference_model_file: "{{.InferenceModelFile}}"
-inference_shm_size: "{{.InferenceShmSize}}"
-inference_context_size: {{.InferenceContextSize}}
-inference_batch_size: {{.InferenceBatchSize}}
-inference_gpu_layers: {{.InferenceGPULayers}}
-inference_tensor_split: "{{.InferenceTensorSplit}}"
-inference_main_gpu: {{.InferenceMainGPU}}
-inference_threads: {{.InferenceThreads}}
-inference_http_threads: {{.InferenceHTTPThreads}}
-inference_fit: "{{.InferenceFit}}"
-inference_gpu_devices: '{{.InferenceGPUDevices}}'
-
 # Service Toggles
-enable_inference_engine: {{.EnableInferenceEngine}}
 enable_proxy_agent: {{.EnableProxyAgent}}
 proxy_server_url: "{{.ProxyServerURL}}"
+enable_deep_research: {{.EnableDeepResearch}}
+
+# Deep Research
+deep_research_image: "{{.DeepResearchImage}}"
+deep_research_port: {{.DeepResearchPort}}
+search_provider: "{{.SearchProvider}}"
+perplexity_api_key: "{{.PerplexityAPIKey}}"
+
+# SGLang Inference Engine (managed separately from docker-compose)
+sglang:
+  enabled: {{.SGLang.Enabled}}
+  image: "{{.SGLang.Image}}"
+  container_name: "{{.SGLang.ContainerName}}"
+  port: {{.SGLang.Port}}
+  gpu_devices:{{- if .SGLang.GPUDevices}}
+{{- range .SGLang.GPUDevices}}
+    - "{{.}}"
+{{- end}}
+{{- else}} []
+{{- end}}
+  shm_size: "{{.SGLang.ShmSize}}"
+  model_path: "{{.SGLang.ModelPath}}"
+  huggingface_cache: "{{.SGLang.HuggingFaceCache}}"
+  dp_size: {{.SGLang.DPSize}}
+  tp_size: {{.SGLang.TPSize}}
+  max_running_requests: {{.SGLang.MaxRunningRequests}}
+  max_total_tokens: {{.SGLang.MaxTotalTokens}}
+  context_length: {{.SGLang.ContextLength}}
+  mem_fraction_static: {{.SGLang.MemFractionStatic}}
+  chunked_prefill_size: {{.SGLang.ChunkedPrefillSize}}
+  schedule_policy: "{{.SGLang.SchedulePolicy}}"
+  kv_cache_dtype: "{{.SGLang.KVCacheDtype}}"
+  attention_backend: "{{.SGLang.AttentionBackend}}"
+  disable_radix_cache: {{.SGLang.DisableRadixCache}}
+  reasoning_parser: "{{.SGLang.ReasoningParser}}"
+  trust_remote_code: {{.SGLang.TrustRemoteCode}}
+  log_level: "{{.SGLang.LogLevel}}"

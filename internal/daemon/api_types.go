@@ -19,10 +19,9 @@ type LogEntry struct {
 
 // UpRequest represents request body for /api/v1/up
 type UpRequest struct {
-	ImageTag              string `json:"image_tag,omitempty"`
-	Port                  int    `json:"port,omitempty"`
-	EnableInferenceEngine bool   `json:"enable_inference_engine,omitempty"`
-	EnableProxyAgent      bool   `json:"enable_proxy_agent,omitempty"`
+	ImageTag         string `json:"image_tag,omitempty"`
+	Port             int    `json:"port,omitempty"`
+	EnableProxyAgent bool   `json:"enable_proxy_agent,omitempty"`
 }
 
 // RestartRequest represents request body for /api/v1/restart

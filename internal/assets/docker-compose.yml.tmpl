@@ -53,48 +53,7 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
-{{if .EnableInferenceEngine}}
-  inference-engine:
-    image: ghcr.io/ggml-org/llama.cpp:full-cuda
-    ports:
-      - "{{.InferencePort}}:{{.InferencePort}}"
-    volumes:
-      - {{.DataDir}}/models:/models:ro
-    shm_size: '{{.InferenceShmSize}}'
-    ipc: host
-    command:
-      - --server
-      - -m
-      - /models/{{.InferenceModelFile}}
-      - -c
-      - "{{.InferenceContextSize}}"
-      - -b
-      - "{{.InferenceBatchSize}}"
-      - -ngl
-      - "{{.InferenceGPULayers}}"
-      - --tensor-split
-      - {{.InferenceTensorSplit}}
-      - -mg
-      - "{{.InferenceMainGPU}}"
-      - -t
-      - "{{.InferenceThreads}}"
-      - --threads-http
-      - "{{.InferenceHTTPThreads}}"
-      - -fit
-      - "{{.InferenceFit}}"
-      - --host
-      - 0.0.0.0
-      - --port
-      - "{{.InferencePort}}"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: [{{.InferenceGPUDevices}}]
-              capabilities: [gpu]
-    restart: unless-stopped
-{{end}}
+
 {{if .EnableProxyAgent}}
   silo-proxy-agent:
     image: eternis/silo-proxy-agent

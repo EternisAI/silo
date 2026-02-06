@@ -38,7 +38,6 @@ By default, the inference engine is NOT started. Use --all to include it.`,
 			if port > 0 {
 				cfg.Port = port
 			}
-			cfg.EnableInferenceEngine = enableInferenceEngine
 			cfg.EnableProxyAgent = enableProxyAgent
 
 			if err := config.Validate(cfg); err != nil {
@@ -130,7 +129,6 @@ func init() {
 
 	upCmd.Flags().StringVar(&imageTag, "image-tag", config.DefaultImageTag, "Docker image tag (first install only)")
 	upCmd.Flags().IntVar(&port, "port", config.DefaultPort, "Application port (first install only)")
-	upCmd.Flags().BoolVar(&enableInferenceEngine, "enable-inference-engine", config.DefaultEnableInferenceEngine, "Enable local inference engine (first install only)")
 	upCmd.Flags().BoolVar(&enableProxyAgent, "enable-proxy-agent", config.DefaultEnableProxyAgent, "Enable proxy agent (first install only)")
 	upCmd.Flags().BoolVar(&upAll, "all", false, "Include inference engine")
 }

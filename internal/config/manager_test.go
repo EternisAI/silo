@@ -28,8 +28,8 @@ func TestLoadOrDefault_NewFile(t *testing.T) {
 	if cfg.Port != DefaultPort {
 		t.Errorf("Expected Port=%d, got %d", DefaultPort, cfg.Port)
 	}
-	if cfg.EnableInferenceEngine != DefaultEnableInferenceEngine {
-		t.Errorf("Expected EnableInferenceEngine=%v, got %v", DefaultEnableInferenceEngine, cfg.EnableInferenceEngine)
+	if cfg.EnableProxyAgent != DefaultEnableProxyAgent {
+		t.Errorf("Expected EnableProxyAgent=%v, got %v", DefaultEnableProxyAgent, cfg.EnableProxyAgent)
 	}
 }
 
@@ -49,7 +49,7 @@ func TestLoadOrDefault_ExistingFileWithMissingFields(t *testing.T) {
 image_tag: "0.1.2"
 port: 8080
 llm_base_url: "http://custom-url:9000/v1"
-default_model: "custom-model.gguf"
+default_model: "custom-model"
 `
 	if err := os.WriteFile(paths.ConfigFile, []byte(partialConfig), 0644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
@@ -72,17 +72,11 @@ default_model: "custom-model.gguf"
 	}
 
 	// Check that missing fields are filled with defaults
-	if cfg.InferencePort != DefaultInferencePort {
-		t.Errorf("Expected default InferencePort=%d, got %d", DefaultInferencePort, cfg.InferencePort)
-	}
-	if cfg.EnableInferenceEngine != DefaultEnableInferenceEngine {
-		t.Errorf("Expected default EnableInferenceEngine=%v, got %v", DefaultEnableInferenceEngine, cfg.EnableInferenceEngine)
-	}
 	if cfg.EnableProxyAgent != DefaultEnableProxyAgent {
 		t.Errorf("Expected default EnableProxyAgent=%v, got %v", DefaultEnableProxyAgent, cfg.EnableProxyAgent)
 	}
-	if cfg.InferenceGPULayers != DefaultInferenceGPULayers {
-		t.Errorf("Expected default InferenceGPULayers=%d, got %d", DefaultInferenceGPULayers, cfg.InferenceGPULayers)
+	if cfg.EnableDeepResearch != DefaultEnableDeepResearch {
+		t.Errorf("Expected default EnableDeepResearch=%v, got %v", DefaultEnableDeepResearch, cfg.EnableDeepResearch)
 	}
 }
 
@@ -102,21 +96,9 @@ func TestLoadOrDefault_ExistingFileWithAllFields(t *testing.T) {
 image_tag: "0.1.2"
 port: 9999
 llm_base_url: "http://my-llm:5000/v1"
-default_model: "my-model.gguf"
-inference_port: 40000
-inference_model_file: "my-inference.gguf"
-inference_shm_size: "32g"
-inference_context_size: 16384
-inference_batch_size: 512
-inference_gpu_layers: 50
-inference_tensor_split: "2,2,2"
-inference_main_gpu: 1
-inference_threads: 32
-inference_http_threads: 16
-inference_fit: "on"
-inference_gpu_devices: "\"1\", \"2\""
-enable_inference_engine: true
+default_model: "my-model"
 enable_proxy_agent: true
+enable_deep_research: true
 `
 	if err := os.WriteFile(paths.ConfigFile, []byte(completeConfig), 0644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
@@ -131,17 +113,11 @@ enable_proxy_agent: true
 	if cfg.Port != 9999 {
 		t.Errorf("Expected preserved Port=9999, got %d", cfg.Port)
 	}
-	if cfg.InferencePort != 40000 {
-		t.Errorf("Expected preserved InferencePort=40000, got %d", cfg.InferencePort)
-	}
-	if cfg.InferenceGPULayers != 50 {
-		t.Errorf("Expected preserved InferenceGPULayers=50, got %d", cfg.InferenceGPULayers)
-	}
-	if !cfg.EnableInferenceEngine {
-		t.Errorf("Expected preserved EnableInferenceEngine=true, got false")
-	}
 	if !cfg.EnableProxyAgent {
 		t.Errorf("Expected preserved EnableProxyAgent=true, got false")
+	}
+	if !cfg.EnableDeepResearch {
+		t.Errorf("Expected preserved EnableDeepResearch=true, got false")
 	}
 }
 
@@ -150,18 +126,16 @@ func TestMergeConfigs(t *testing.T) {
 		Version:  "0.1.1",
 		ImageTag: "0.1.1",
 		Port:     8080,
-		// Missing: LLMBaseURL, DefaultModel, InferencePort, etc.
+		// Missing: LLMBaseURL, DefaultModel, etc.
 	}
 
 	defaults := &Config{
-		Version:               DefaultVersion,
-		ImageTag:              DefaultImageTag,
-		Port:                  DefaultPort,
-		LLMBaseURL:            DefaultLLMBaseURL,
-		DefaultModel:          DefaultModel,
-		InferencePort:         DefaultInferencePort,
-		EnableInferenceEngine: DefaultEnableInferenceEngine,
-		EnableProxyAgent:      DefaultEnableProxyAgent,
+		Version:          DefaultVersion,
+		ImageTag:         DefaultImageTag,
+		Port:             DefaultPort,
+		LLMBaseURL:       DefaultLLMBaseURL,
+		DefaultModel:     DefaultModel,
+		EnableProxyAgent: DefaultEnableProxyAgent,
 	}
 
 	merged := mergeConfigs(existing, defaults)
@@ -180,9 +154,6 @@ func TestMergeConfigs(t *testing.T) {
 	}
 	if merged.DefaultModel != DefaultModel {
 		t.Errorf("Expected merged.DefaultModel=%s, got %s", DefaultModel, merged.DefaultModel)
-	}
-	if merged.InferencePort != DefaultInferencePort {
-		t.Errorf("Expected merged.InferencePort=%d, got %d", DefaultInferencePort, merged.InferencePort)
 	}
 }
 
@@ -211,10 +182,9 @@ port: 8080
 
 	// Check that specific fields are in the missing list
 	expectedMissing := map[string]bool{
-		"llm_base_url":            true,
-		"default_model":           true,
-		"enable_inference_engine": true,
-		"enable_proxy_agent":      true,
+		"llm_base_url":       true,
+		"default_model":      true,
+		"enable_proxy_agent": true,
 	}
 
 	for _, field := range missing {

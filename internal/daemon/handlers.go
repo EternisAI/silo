@@ -82,7 +82,6 @@ func (s *Server) handleUp(w http.ResponseWriter, r *http.Request) {
 	if req.Port > 0 {
 		cfg.Port = req.Port
 	}
-	cfg.EnableInferenceEngine = req.EnableInferenceEngine
 	cfg.EnableProxyAgent = req.EnableProxyAgent
 
 	// Validate config

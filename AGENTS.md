@@ -122,23 +122,17 @@ silo/
 **Config Struct** (`manager.go`):
 ```go
 type Config struct {
-    Version               string // CLI version
-    ImageTag              string // Docker image tag
-    Port                  int    // Frontend port
-    LLMBaseURL            string // Inference engine URL
-    DefaultModel          string // Default LLM model
-    InferencePort         int
-    InferenceModelFile    string // GGUF filename
-    InferenceShmSize      string
-    InferenceContextSize  int
-    InferenceBatchSize    int
-    InferenceGPULayers    int    // 999 = all layers on GPU
-    InferenceTensorSplit  string
-    InferenceMainGPU      int
-    InferenceThreads      int
-    InferenceHTTPThreads  int
-    InferenceFit          string
-    InferenceGPUDevices   string // Quoted CSV: "0", "1", "2"
+    Version             string // CLI version
+    ImageTag            string // Docker image tag
+    Port                int    // Frontend port
+    LLMBaseURL          string // Inference engine URL
+    DefaultModel        string // Default LLM model
+    EnableProxyAgent    bool   // Enable remote proxy agent
+    EnableDeepResearch  bool   // Enable deep research service
+    DeepResearchImage   string // GHCR image (sha-tagged)
+    DeepResearchPort    int    // Default 3031
+    SearchProvider      string // "perplexity" or "tavily"
+    PerplexityAPIKey    string // Required for deep research
 }
 ```
 
@@ -224,29 +218,18 @@ version: "0.1.2"                       # CLI version
 image_tag: "0.1.2"                     # Docker image tag
 port: 80                               # Frontend port
 llm_base_url: "http://inference-engine:30000/v1"
-default_model: "GLM-4.7-Q4_K_M.gguf"
-inference_port: 30000
-inference_model_file: "GLM-4.7-Q4_K_M.gguf"
-inference_shm_size: "16g"
-inference_context_size: 8192
-inference_batch_size: 256
-inference_gpu_layers: 999              # 999 = all layers on GPU
-inference_tensor_split: "1,1,1"
-inference_main_gpu: 0
-inference_threads: 16
-inference_http_threads: 8
-inference_fit: "off"
-inference_gpu_devices: "\"0\", \"1\", \"2\""  # Quoted CSV for YAML
+default_model: "model-name"
 
 # Service toggles
-enable_inference_engine: false         # Enable llama.cpp inference
 enable_proxy_agent: false              # Enable remote proxy agent
 enable_deep_research: true             # Enable deep research service
 
 # Deep research configuration
-deep_research_image: "ghcr.io/eternisai/deep_research:sha-XXXXXXX"  # See manager.go for current default
+# NOTE: Image uses SHA tags from GHCR (not semver from Docker Hub)
+# The default is pinned in manager.go and auto-updated during silo upgrade
+deep_research_image: "ghcr.io/eternisai/deep_research:sha-XXXXXXX"
 deep_research_port: 3031
-search_provider: "perplexity"
+search_provider: "perplexity"          # "perplexity" or "tavily"
 perplexity_api_key: ""                 # Required for deep research web search
 ```
 
@@ -265,9 +248,42 @@ perplexity_api_key: ""                 # Required for deep research web search
 1. **Template-driven Configuration**: docker-compose.yml and config.yml generated from embedded templates with user values
 2. **Single-responsibility Packages**: Each package handles one concern (installer, updater, docker, config)
 3. **Stateful Operations**: Tracks install timestamps and versions in state.json
-4. **Selective Image Pulls**: Only pulls backend/frontend (inference engine image is larger, pre-packaged)
+4. **Selective Image Pulls**: Pulls backend/frontend/deep-research; inference managed separately via docker run
 5. **Non-blocking Updates**: Version checks warn but don't fail operations
 6. **Graceful Degradation**: Warns on errors but continues where possible
+
+## Deep Research Deployment
+
+The deep research service uses a different deployment model than frontend/backend:
+
+| Aspect | Frontend / Backend | Deep Research |
+|--------|-------------------|---------------|
+| **Registry** | Docker Hub (`eternis/silo-box-*`) | GHCR (`ghcr.io/eternisai/deep_research`) |
+| **Versioning** | Semantic versioning (`0.1.2`) | Commit SHA tags (`sha-2e9f2ef`) |
+| **Update Source** | CLI queries Docker Hub API for latest | Version pinned as `DefaultDeepResearchImage` in `manager.go` |
+| **Pull Criticality** | Critical (blocks upgrade on failure) | Non-critical (warns but continues) |
+
+### Update Flow
+
+1. Push changes to `silo_deep_research` repo
+2. GitHub Actions builds and pushes to GHCR with `sha-{commit}` tag
+3. Update `DefaultDeepResearchImage` constant in `internal/config/manager.go`
+4. Release new CLI version (`gh workflow run Release`)
+5. Users run `silo upgrade` to get new image
+
+### GHCR Authentication
+
+If the deep research image is private, users need GHCR auth:
+
+```bash
+# Create PAT (classic) with read:packages scope
+# If org uses SAML SSO, authorize PAT for the org
+echo "YOUR_PAT" | docker login ghcr.io -u YOUR_USERNAME --password-stdin
+```
+
+### Graceful Pull Handling
+
+The CLI pulls services individually. If deep research fails to pull (auth issues), it logs a warning but continues deploying frontend/backend.
 
 ## Development Workflow
 
